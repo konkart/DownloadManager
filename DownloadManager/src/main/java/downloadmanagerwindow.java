@@ -13,12 +13,25 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.IntStream;
+
 import javax.swing.JFrame;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JTable;
 import javax.swing.UIManager;
 import javax.swing.JTabbedPane;
@@ -27,27 +40,29 @@ import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 
 public class downloadmanagerwindow {
-	JPopupMenu popup;
-	static Image image = Toolkit.getDefaultToolkit().getImage("C:\\Users\\wcwra\\Desktop\\emojis\\icon.png");
-
+	JPopupMenu popup; 
+	static ClassLoader classLoader = downloadmanagerwindow.class.getClassLoader();
+	static String path  = classLoader.getResource("NekoAtsumeFace.png").getPath();
+	static Image image = Toolkit.getDefaultToolkit().getImage(path);
+	public int DownloadID = 0;
 	static TrayIcon trayIcon = new TrayIcon(image, "Tester2");
 	static JFrame frame;
-
+	public DownloadFile df[] = new  DownloadFile[0];
 	static TrayFrame trayframe;
 	private JTextField textField;
 	private JTable table_1;
 	private JTable table_2;
+	static downloadmanagerwindow window;
+	private DefaultTableModel model;
 
-	/**
-	 * Launch the application.
-	 */
 	public static void main(String[] args) {
+		System.setProperty("http.agent", "Chrome");
 		EventQueue.invokeLater(new Runnable() {
 			@SuppressWarnings("static-access")
 			public void run() {
 				try {
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-					downloadmanagerwindow window = new downloadmanagerwindow();
+					window = new downloadmanagerwindow();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -99,32 +114,18 @@ public class downloadmanagerwindow {
 		
 	}
 	
-	/**
-	 * Create the application.
-	 */
+
 	public downloadmanagerwindow() {
 		initialize();
 	}
 
-	/**
-	 * Initialize the contents of the frame.
-	 */
+/*χτισιμο του GUI*/
 	private void initialize() {
 		
 		frame = new JFrame();
 		frame.setBounds(100, 100, 500, 387);
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
 		frame.getContentPane().setLayout(null);
-		
-		textField = new JTextField();
-		textField.setBounds(10, 11, 365, 20);
-		frame.getContentPane().add(textField);
-		textField.setColumns(10);
-		
-		JButton btnDownload = new JButton("Download");
-		btnDownload.setBounds(385, 10, 89, 23);
-		frame.getContentPane().add(btnDownload);
-		
 		
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 42, 464, 295);
@@ -138,6 +139,10 @@ public class downloadmanagerwindow {
 		scrollPane.setBounds(0, 23, 459, 244);
 		panel.add(scrollPane);
 		
+		trayframe = new TrayFrame();
+	    trayframe.setVisible(false);
+        //trayframe.addR(new Object[]{"Column 1", "Column 2"});
+        
 		table_1 = new JTable();
 		table_1.setRowHeight(30);
 		table_1.setShowGrid(false);
@@ -150,9 +155,64 @@ public class downloadmanagerwindow {
 			}
 		));
 		scrollPane.setViewportView(table_1);
-		DefaultTableModel model = (DefaultTableModel) table_1.getModel();
-		model.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
+		model = (DefaultTableModel) table_1.getModel();
+		table_1.setDefaultEditor(Object.class, null);
+		//model.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
 		
+		textField = new JTextField();
+		textField.setBounds(10, 11, 365, 20);
+		frame.getContentPane().add(textField);
+		textField.setColumns(10);
+		
+		JButton btnDownload = new JButton("Download");
+		btnDownload.setBounds(385, 10, 89, 23);
+		frame.getContentPane().add(btnDownload);
+		/*κουμπί dowload*/
+		btnDownload.addActionListener(new ActionListener()
+		{
+		  public void actionPerformed(ActionEvent e)
+		  {
+			String ls_FileLoc;
+			int li_TotalConnections = 5;
+			int li_BufferLen = 4;
+			if (textField.getText().equals("")){
+				JOptionPane.showMessageDialog(
+			             null,"URL is Invalid or Empty.Please enter valid URL",
+         				 "ERROR",JOptionPane.ERROR_MESSAGE);
+
+				return;
+			}
+			ls_FileLoc = textField.getText();
+			try {
+				String ext = getContentTypeA.gContentTypeA(ls_FileLoc);
+				System.out.println(ext);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			String[] item={ls_FileLoc,"B","C",getDateTime()};
+			String[] itemTray={ls_FileLoc,"B"};
+			
+			model.addRow(item);
+			trayframe.modelTray.addRow(itemTray);
+			/*li_TotalConnections = Integer.parseInt((String)cmbConnection.getSelectedItem()); 
+			li_BufferLen = Integer.parseInt((String)cmbMemory.getSelectedItem());*/ 
+			
+			/*νέο download και πρόσθεση στον πίνακα*/
+		    DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
+		    addDownload(download);
+			
+				df[DownloadID].start();
+				Monitor dMonitor = new Monitor(window,DownloadID);
+				dMonitor.start();
+				DownloadID = DownloadID + 1;
+				textField.setText("");
+				
+		  }
+		});
+		
+		/*---------------------*/
+		
+		/*το κουμπί Speed limit δεν κάνει ακόμα κάτι*/
 		JToggleButton tglbtnNewToggleButton = new JToggleButton("Speed Limit");
 		tglbtnNewToggleButton.setBounds(365, 0, 94, 23);
 		panel.add(tglbtnNewToggleButton);
@@ -173,10 +233,7 @@ public class downloadmanagerwindow {
 		));
 		scrollPane_1.setViewportView(table_2);
 		
-		
-
-	    //...where the GUI is constructed:
-	    //Create the popup menu.
+	
 	    popup = new JPopupMenu();
 	    JMenuItem menuItem = new JMenuItem("A popup menu item");
 	    menuItem.addActionListener(null);
@@ -184,13 +241,9 @@ public class downloadmanagerwindow {
 	    menuItem = new JMenuItem("Another popup menu item");
 	    menuItem.addActionListener(null);
 	    popup.add(menuItem);
-
-	    //Add listener to components that can bring up popup menus.
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
-	    trayframe = new TrayFrame();
-	    trayframe.setVisible(false);
-        trayframe.addR(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
+	    
 	   
 		}	
 	
@@ -212,6 +265,129 @@ public class downloadmanagerwindow {
 	        }
 	    }
 	}
+	private String getDateTime() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
 	/*---------------------*/
+	//Monitor για κάθε λήψη
+	class Monitor extends Thread{
+
+			downloadmanagerwindow gui;
+		   int threadIndex;
+		   
+		   public Monitor(downloadmanagerwindow dm_frame,int idx){
+		   	gui=dm_frame;
+		   	threadIndex = idx;
+		  	
+		   }
+
+		   public void run(){
+		   int dThreadCount=0;
+		   int currThread=0;
+		   int dconnections=0;
+		   int Downloadcomplete;
+		   String[] files;
+		   FileUtils futils = new FileUtils();
+
+		   currThread= threadIndex;
+		   //gui.updateStatus(currThread);
+		   if (gui.df[currThread].FileSize == -1){
+		   		gui.df[currThread].Complete =-1;
+				JOptionPane.showMessageDialog(
+				      	 null,"Download Failed.Try Downloading Again or verify URL is Correct" ,
+              		 "INFORMATION",JOptionPane.INFORMATION_MESSAGE);
+              gui.updateStatus(currThread,true);
+              		 				
+		   		}
+		   			
+		   
+		   while(gui.df[currThread].Complete == 0) //Monitor Loop για το download
+		   {
+		   			
+		   				dconnections = gui.df[currThread].TotConnections;
+		   				//Τσεκ για αν τέλειωσε το κατέβασμα και αν οι συνδέσεις είναι ακόμα ενεργές
+		   				if (gui.df[currThread].Complete == 0 && gui.df[currThread].ActiveSubConn == dconnections ){
+		   				
+		   				gui.updateStatus(currThread,false);
+		   				
+		   				
+		   				
+		   				Downloadcomplete = 1;//Flag
+		   				files =  new String[dconnections]; //Πίνακας με τα ονόματα των thread
+		   				
+		   				
+		   				for(int subDown = 0; subDown < dconnections ; subDown ++){
+		   					
+		   				    files[subDown]= gui.df[currThread].getSubDownId(subDown);
+		   				   		
+		   				   		//Βεβαιωση ότι δεν έχει ολοκληρωθεί το κατέβασμα
+		   				   		if(gui.df[currThread].isSubDownComplete(subDown) == 0){
+		   				      	
+		   				      		Downloadcomplete = 0; //Download Incomplete
+		   				      		
+		   				      		break;
+		   				      		
+		   				      	}
+		   				      
+		   				     }
+		   				      
+		   				if (Downloadcomplete == 1)
+		   					{
+		   					System.out.println(Downloadcomplete);
+		   					//Ένωση των κατεβασμένων αρχείων και διαγραφή των "κωμματιων"
+								try {
+									futils.concat(files,gui.df[currThread].FilePath);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							for(int fileid=0;fileid < dconnections;fileid++) {
+		   						try {
+									futils.delete(files[fileid]);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+		   					}
+		   					gui.df[currThread].Complete = 1; 
+		   					gui.updateStatus(currThread,false);//Ενημέρωση GUI
+		   					
+		   					}     
+		   				  
+		   				  }
+		   		}
+			}
+	}
+	
+	//Method to update our data
+	public void updateStatus( int currThread, boolean dFailed){
+		if (!dFailed){
+		//TODO FILESIZE
+		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);	
+   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,2);
+   		//TODO DOWNLOAD SPEED
+   		downloadmanagerwindow.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
+		}
+		else {
+		String str="Failed";
+		//this.model.setValueAt((Object)str,currThread,1);
+		this.model.setValueAt((Object)str,currThread,2);
+   		this.model.setValueAt((Object)str,currThread,3);
+   		//this.model.setValueAt((Object)str,currThread,4);
+   		downloadmanagerwindow.trayframe.modelTray.setValueAt((Object)str,currThread,1);
+		}
+
+
+}
+	
+	//Πρόσθεση λήψης στον πίνακα ληψεων
+	public void addDownload(DownloadFile d) {
+	       
+        DownloadFile[] dab = new DownloadFile[df.length+1];
+        System.arraycopy(df, 0, dab, 0, df.length);
+        dab[dab.length-1] = d;
+        df = dab;
+        
+    	}
 }
 

@@ -8,12 +8,13 @@ import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
 
 public class TrayFrame extends JFrame {
-	private static final long serialVersionUID = 1L;
-	
-	JTable table;
 
-	protected DefaultTableModel modelTray;
-	public TrayFrame() {
+
+private static final long serialVersionUID = 1L;
+JTable table;
+protected DefaultTableModel modelTray;
+
+public TrayFrame() {
 		setType(Type.UTILITY);
 		setResizable(false);
 		setAlwaysOnTop(true);
@@ -36,8 +37,6 @@ public class TrayFrame extends JFrame {
             if (location.y < screen.y) {
             	location.y = screen.y;
             }
-            
-            //frameTray.setDecorationStyle(JRootPane.NONE);
             this.setLocation(location);
             getContentPane().setLayout(null);
             
@@ -66,5 +65,7 @@ public class TrayFrame extends JFrame {
 	public void addR(Object object) {
 		modelTray.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
 		
+	}
+	public void setValueAt(String string, int currThread, int i) {
 	}
 }
