@@ -41,7 +41,7 @@ public void run(){
 			uc.setRequestProperty("Range","bytes=" + FileStartPos + "-"+ FileEndPos);
 
 			//int li_bytesRead;
-			File f = new File("\\DownloadedFiles\\"+SubDownloadId);
+			File f = new File("CHANGE DIRECTORY"+SubDownloadId);
 			
 			outputStream = new FileOutputStream(f);
 			InputStream inputStream =  uc.getInputStream();

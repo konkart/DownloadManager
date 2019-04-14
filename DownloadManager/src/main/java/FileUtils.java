@@ -13,13 +13,13 @@ public class FileUtils{
 	String outfile=getFilename(getname[getname.length-1]);
 	File f = new File(outfile);
 	
-	OutputStream out = new FileOutputStream("EISAGWGH DIRECTORY"+f);
+	OutputStream out = new FileOutputStream("CHANGE DIRECTORY"+f);
 	
 	
     byte[] buf = new byte[1024*4];
     for (String file : args) {
         
-		InputStream in = new FileInputStream("EISAGWGH DIRectory"+file);
+		InputStream in = new FileInputStream("CHANGE DIRECTORY"+file);
         int b = 0;
         while ( (b = in.read(buf)) >= 0) {
             out.write(buf, 0, b);
@@ -45,7 +45,7 @@ public static String getFilename(String pathfilename) {
   		} 	
   	public void delete(String filename) throws IOException {
   	String name=getFilename(filename);
-    File f = new File("EISAGWGH DIRECTORY"+name);
+    File f = new File("CHANGE DIRECTORY"+name);
     f.delete();
   }
   	
