@@ -15,6 +15,7 @@ public class DownloadFile extends Thread{
 	public int ActiveSubConn;
 	public long StartTime;
 	public boolean IsPartial;
+	public boolean Paused = false;
 	public URL url;
 	public DownloadFile(int aDownloadID,String aFileLoc,int aTotConnections,int aBufferSize){
 		FileLoc = aFileLoc;
@@ -63,9 +64,10 @@ public int StartDownload() throws IOException{
 			long ld_FStartPos,ld_FEndPos,ld_partsize;
 			String partname;
 			
-			sd = new SubDownload[TotConnections];
+			
 			//Multipart Download
 			if (IsPartial==true) {
+			sd = new SubDownload[TotConnections];
 			ld_partsize= (long)(FileSize/TotConnections);
 
 
@@ -93,7 +95,8 @@ public int StartDownload() throws IOException{
 				}
 				else {
 					//SingleDownload
-					sd = new SubDownload[1];
+					TotConnections = 1;
+					sd = new SubDownload[TotConnections];
 					
 					li_conn=1;
 					ld_partsize= FileSize;
@@ -119,7 +122,7 @@ public int DownloadProgress(){
 				int pcount=0;
 				calcBytesDownloaded();
 				if ( BytesDownloaded > 0 && FileSize > 0 )
-				pcount = (int)(( BytesDownloaded * 100 ) / FileSize) ;
+				pcount = (int)((( BytesDownloaded * 100 ) / FileSize)/TotConnections) ;
 				return pcount;
 			}
 			
@@ -131,9 +134,23 @@ public String getSubDownId(int id)
 public void calcBytesDownloaded(){
 				BytesDownloaded=0;	
 				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
-					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloaded;
+					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloadedP;
 					}
 			}
+
+public void PauseDownload() {
+	for (int i=0;i<sd.length;i++) {
+		sd[i].setPause();
+	}
+}
+public boolean getPause() {
+	boolean p = false;
+	for (int i=0;i<sd.length;i++) {
+		p = sd[i].getPause();
+	}
+	return p;
+	
+}
 		
 public void run(){
 				if ( FileSize > 0 )

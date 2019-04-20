@@ -54,7 +54,8 @@ public class downloadmanagerwindow {
 	private JTable table_2;
 	static downloadmanagerwindow window;
 	private DefaultTableModel model;
-
+	JMenuItem pause;
+	JMenuItem resume;
 	public static void main(String[] args) {
 		System.setProperty("http.agent", "Chrome");
 		EventQueue.invokeLater(new Runnable() {
@@ -151,9 +152,10 @@ public class downloadmanagerwindow {
 			new Object[][] {
 			},
 			new String[] {
-					"Name", "Progress", "Size", "Date"
+				"ID", "Name", "Progress", "Size", "Date"
 			}
 		));
+		table_1.getColumnModel().getColumn(0).setPreferredWidth(27);
 		scrollPane.setViewportView(table_1);
 		model = (DefaultTableModel) table_1.getModel();
 		table_1.setDefaultEditor(Object.class, null);
@@ -189,7 +191,7 @@ public class downloadmanagerwindow {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			String[] item={ls_FileLoc,"B","C",getDateTime()};
+			String[] item={""+DownloadID+"",ls_FileLoc,"B","C",getDateTime()};
 			String[] itemTray={ls_FileLoc,"B"};
 			
 			model.addRow(item);
@@ -228,19 +230,18 @@ public class downloadmanagerwindow {
 			new Object[][] {
 			},
 			new String[] {
-				"Name", "Progress", "Size", "Date"
+					"ID","Name", "Progress", "Size", "Date"
 			}
 		));
 		scrollPane_1.setViewportView(table_2);
 		
 	
-	    popup = new JPopupMenu();
-	    JMenuItem menuItem = new JMenuItem("A popup menu item");
-	    menuItem.addActionListener(null);
-	    popup.add(menuItem);
-	    menuItem = new JMenuItem("Another popup menu item");
-	    menuItem.addActionListener(null);
-	    popup.add(menuItem);
+		popup = new JPopupMenu();
+	    pause = new JMenuItem("Pause");
+	    popup.add(pause);
+	    resume = new JMenuItem("resume");
+	    
+	    popup.add(resume);
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
 	    
@@ -260,6 +261,20 @@ public class downloadmanagerwindow {
 
 	    private void maybeShowPopup(MouseEvent e) {
 	        if (e.isPopupTrigger()) {
+	        	//PAUSE DOWNLOAD BUTTON ACTION
+	        	
+	    	    pause.addActionListener(new ActionListener()
+	    		{
+	    			  public void actionPerformed(ActionEvent e)
+	    			  {
+	    				  int column = 0;
+	    				  int row = table_1.getSelectedRow();
+	    				  String value = table_1.getModel().getValueAt(row, column).toString();
+	    				  System.out.println(value);
+	    				  df[Integer.parseInt(value)].PauseDownload();
+	    			  }
+	    		});
+	    	    resume.addActionListener(null);
 	            popup.show(e.getComponent(),
 	                       e.getX(), e.getY());
 	        }
@@ -333,7 +348,7 @@ public class downloadmanagerwindow {
 		   				      
 		   				     }
 		   				      
-		   				if (Downloadcomplete == 1)
+		   				if (Downloadcomplete == 1 && gui.df[currThread].getPause() == false)
 		   					{
 		   					System.out.println(Downloadcomplete);
 		   					//Ένωση των κατεβασμένων αρχείων και διαγραφή των "κωμματιων"
@@ -363,8 +378,8 @@ public class downloadmanagerwindow {
 	public void updateStatus( int currThread, boolean dFailed){
 		if (!dFailed){
 		//TODO FILESIZE
-		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);	
-   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,2);
+		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,2);	
+   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
    		//TODO DOWNLOAD SPEED
    		downloadmanagerwindow.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
 		}
