@@ -1,26 +1,32 @@
 import java.net.*;
+import java.text.NumberFormat;
 import java.io.*;
 
 
-public class SubDownload extends Thread{
+public class SubDownload implements Runnable{
 	double elapsedtime=0;
     long totalDownload = 0;
     int bytesRead = -1;
+    public long StartTime;
 	public  String SubDownloadId;
 	public  String FileLoc;
 	public  long FileStartPos;
 	public  long FileEndPos;
 	public  long BytesDownloaded;
-	public long BytesDownloadedP;
+	public 	long BytesDownloadedP;
 	public  byte Buffer[];
 	public  byte NewBufferminus[];
 	public  byte NewBufferplus[];
 	public  int Complete=0;
+	int DownloadID;
+	public volatile float r = 0;
 	boolean Aborted = false;
-	public boolean Paused = false;
+	int inc = 50;
+	private volatile boolean Paused = false;
 	FileOutputStream outputStream = null;
+	float Counter=0;
 
-public SubDownload(String aSubDownloadId,String aFileLoc,long aFileStartPos,long aFileEndPos,int aBufferSize){
+public SubDownload(String aSubDownloadId,String aFileLoc,long aFileStartPos,long aFileEndPos,int aBufferSize,int aDownloadID){
 
 		FileLoc=aFileLoc;
 		FileStartPos=aFileStartPos;
@@ -29,6 +35,7 @@ public SubDownload(String aSubDownloadId,String aFileLoc,long aFileStartPos,long
 		BytesDownloaded=0;
 		BytesDownloadedP=0;
 		SubDownloadId=aSubDownloadId;
+		DownloadID=aDownloadID;
 		Complete=0;
 
 		}
@@ -38,58 +45,68 @@ public int SubDownloadStart(){ return 1;}
 public void run(){
 
 		try{
-
+			
+			Paused=false;
+			
 			URL url = new URL(FileLoc);
 			URLConnection uc = url.openConnection();
-			
+			uc.setRequestProperty("connection","Keep-Alive");
 
 			//int li_bytesRead;
 			File f = new File("C:\\Users\\wcwra\\Videos\\Desktop\\"+SubDownloadId);
 			if (f.exists()) {
-			outputStream = new FileOutputStream(f,true);
-			BytesDownloadedP = f.length();
-			long newStartPos = f.length();
-			FileStartPos = newStartPos+FileStartPos;
-			uc.setRequestProperty("Range","bytes=" + FileStartPos + "-"+ FileEndPos);
-			}
+				
+				BytesDownloadedP = f.length();
+				FileStartPos=FileStartPos+f.length();
+				uc.setRequestProperty("Range","bytes=" +(FileStartPos) + "-"+ FileEndPos);
+				outputStream = new FileOutputStream(f,true);
+				Paused=false;
+				}
 			else {
-			outputStream = new FileOutputStream(f,true);
-			}
+				uc.setRequestProperty("Range","bytes=" + FileStartPos + "-"+ FileEndPos);
+				outputStream = new FileOutputStream(f);
+				}
 			InputStream inputStream =  uc.getInputStream();
 			byte[] buffer = Buffer;
-			System.out.println(FileEndPos+"   "+FileStartPos);
-			while(BytesDownloaded < (FileEndPos - FileStartPos) && Paused==false)
-			{
-				while ((bytesRead = inputStream.read(buffer)) != -1 && Paused==false) {
-		        	
+			while(BytesDownloaded < (FileEndPos - FileStartPos))
+			{	StartTime = System.currentTimeMillis();
+				if(Paused==true) {
+					Thread.sleep(3000);
+				}
+				
+					
+				while (Paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
 						
+						Counter+=bytesRead;
 		            	outputStream.write(buffer, 0, bytesRead);
 		            
 		            	
 		            	BytesDownloaded += bytesRead;
 		            	BytesDownloadedP += bytesRead;
-		            	//DOWNLOAD SPEED LIMIT TEST,TODO INTERVAL AND LIMIT CHECK
-		            	/*if (bytesRead>500) {
-		            		NewBufferminus = new byte [3];
-		            		buffer = NewBufferminus;
+		            	if (r!=0 && Counter>r) {
+		            	inc = (int) (r*10);
+		            	Counter=0;
+		            	Thread.sleep(inc);
 		            	}
-		            	else {
-		            		NewBufferplus = new byte [500];
-		            		buffer = NewBufferplus;
-		            	}*/
-		            	//buffer=NewBufferplus;
+		            	
+		            	//DOWNLOAD SPEED LIMIT TEST,TODO INTERVAL AND LIMIT CHECK
 		            	
 		        	
 		        //--------------------  
 		        	
-				}     
+					} 
+				
+				
 			}
-			System.out.println(BytesDownloaded);
 			outputStream.close();
 	        inputStream.close();
-
 			//Finished Downloading
-			Complete=1;
+	        //System.out.println(f.getName() +" "+ f.length()+"size // "+SubDownloadId+" // "+(FileStartPos)+" - "+FileEndPos);
+	        if(Paused==false){
+	        Complete=1;
+	        
+			}
+	        
 
 		}catch(Exception e){
 			System.out.println(e);
@@ -98,12 +115,24 @@ public void run(){
 
 		}
 
-	public void setPause() {
+	public synchronized void setPause() {
 		Paused = true;
-		System.out.println(Paused);
+		
 	}
-	public boolean getPause() {
+	public synchronized boolean getPause() {
 		return Paused;
 	}
-}
 
+	public synchronized void setResume() {
+		Paused = false;
+		
+	}
+	public synchronized boolean getResume() {
+		return Paused;
+	}
+
+	public void RateLimit(float x) {
+		this.r = x;
+		
+	}
+}

@@ -9,6 +9,8 @@ import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -22,6 +24,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 import javax.swing.JFrame;
@@ -54,8 +58,13 @@ public class downloadmanagerwindow {
 	private JTable table_2;
 	static downloadmanagerwindow window;
 	private DefaultTableModel model;
+	public int li_TotalConnections = 5;
+	public int li_BufferLen = 4;
+	public boolean RateState=false;
+	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
+	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) {
 		System.setProperty("http.agent", "Chrome");
 		EventQueue.invokeLater(new Runnable() {
@@ -120,7 +129,7 @@ public class downloadmanagerwindow {
 		initialize();
 	}
 
-/*χτισιμο του GUI*/
+
 	private void initialize() {
 		
 		frame = new JFrame();
@@ -169,14 +178,13 @@ public class downloadmanagerwindow {
 		JButton btnDownload = new JButton("Download");
 		btnDownload.setBounds(385, 10, 89, 23);
 		frame.getContentPane().add(btnDownload);
-		/*κουμπί dowload*/
+		
 		btnDownload.addActionListener(new ActionListener()
 		{
 		  public void actionPerformed(ActionEvent e)
 		  {
 			String ls_FileLoc;
-			int li_TotalConnections = 5;
-			int li_BufferLen = 4;
+			
 			if (textField.getText().equals("")){
 				JOptionPane.showMessageDialog(
 			             null,"URL is Invalid or Empty.Please enter valid URL",
@@ -199,23 +207,40 @@ public class downloadmanagerwindow {
 			/*li_TotalConnections = Integer.parseInt((String)cmbConnection.getSelectedItem()); 
 			li_BufferLen = Integer.parseInt((String)cmbMemory.getSelectedItem());*/ 
 			
-			/*νέο download και πρόσθεση στον πίνακα*/
+			
 		    DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
 		    addDownload(download);
-			
-				df[DownloadID].start();
+		    
+				//df[DownloadID].start();
 				Monitor dMonitor = new Monitor(window,DownloadID);
-				dMonitor.start();
+				pool.execute(df[DownloadID]);
+				pool.execute(dMonitor);
 				DownloadID = DownloadID + 1;
 				textField.setText("");
+				if(RateState=true) {
+					DownloadSpeedLimit(100);
+				}
 				
 		  }
 		});
 		
 		/*---------------------*/
 		
-		/*το κουμπί Speed limit δεν κάνει ακόμα κάτι*/
+		
 		JToggleButton tglbtnNewToggleButton = new JToggleButton("Speed Limit");
+		 tglbtnNewToggleButton.addItemListener(new ItemListener() {
+			   public void itemStateChanged(ItemEvent ev) {
+			      if(ev.getStateChange()==ItemEvent.SELECTED){
+			    	DownloadSpeedLimit(100);
+			    	RateState=true;
+			        System.out.println("button is selected");
+			      } else if(ev.getStateChange()==ItemEvent.DESELECTED){
+			    	DownloadSpeedLimit(0);
+			    	RateState=false;
+			        System.out.println("button is not selected");
+			      }
+			   }
+			});
 		tglbtnNewToggleButton.setBounds(365, 0, 94, 23);
 		panel.add(tglbtnNewToggleButton);
 		
@@ -265,16 +290,43 @@ public class downloadmanagerwindow {
 	        	
 	    	    pause.addActionListener(new ActionListener()
 	    		{
+	    			  
+					public void actionPerformed(ActionEvent e)
+	    			  {
+							
+							int column = 0;
+							int row = table_1.getSelectedRow();
+	    				  String value = table_1.getModel().getValueAt(row, column).toString();
+	    				  System.out.println(value);
+	    				  System.out.println(df[Integer.parseInt(value)]);
+	    				  //pool.shutdownNow();
+	    				  df[Integer.parseInt(value)].PauseDownload();
+	    				  
+	    		
+	    			  }
+	    		});
+	    	    resume.addActionListener(new ActionListener()
+	    		{
 	    			  public void actionPerformed(ActionEvent e)
 	    			  {
+	    				  //ExecutorService pool = Executors.newCachedThreadPool();
 	    				  int column = 0;
 	    				  int row = table_1.getSelectedRow();
 	    				  String value = table_1.getModel().getValueAt(row, column).toString();
-	    				  System.out.println(value);
-	    				  df[Integer.parseInt(value)].PauseDownload();
+	    				  String url =  table_1.getModel().getValueAt(row, 1).toString();
+	    				  df[Integer.parseInt(value)].ResumeDownload();
+	    					  /*DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen-1);
+	    					    
+	    				  	DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
+	    				    addDownload(download);
+	    				    Monitor dMonitor = new Monitor(window,Integer.parseInt(value));
+	    				    pool.execute(df[DownloadID]);
+	    					pool.execute(dMonitor);*/
+	    						
+	    						
+	    				  
 	    			  }
 	    		});
-	    	    resume.addActionListener(null);
 	            popup.show(e.getComponent(),
 	                       e.getX(), e.getY());
 	        }
@@ -286,7 +338,7 @@ public class downloadmanagerwindow {
         return dateFormat.format(date);
     }
 	/*---------------------*/
-	//Monitor για κάθε λήψη
+	
 	class Monitor extends Thread{
 
 			downloadmanagerwindow gui;
@@ -302,7 +354,7 @@ public class downloadmanagerwindow {
 		   int dThreadCount=0;
 		   int currThread=0;
 		   int dconnections=0;
-		   int Downloadcomplete;
+		   int Downloadcomplete = 1;
 		   String[] files;
 		   FileUtils futils = new FileUtils();
 
@@ -318,11 +370,12 @@ public class downloadmanagerwindow {
 		   		}
 		   			
 		   
-		   while(gui.df[currThread].Complete == 0) //Monitor Loop για το download
+		   while(gui.df[currThread].Complete == 0)
 		   {
+			   
 		   			
 		   				dconnections = gui.df[currThread].TotConnections;
-		   				//Τσεκ για αν τέλειωσε το κατέβασμα και αν οι συνδέσεις είναι ακόμα ενεργές
+		   				
 		   				if (gui.df[currThread].Complete == 0 && gui.df[currThread].ActiveSubConn == dconnections ){
 		   				
 		   				gui.updateStatus(currThread,false);
@@ -330,14 +383,16 @@ public class downloadmanagerwindow {
 		   				
 		   				
 		   				Downloadcomplete = 1;//Flag
-		   				files =  new String[dconnections]; //Πίνακας με τα ονόματα των thread
+		   				files =  new String[dconnections];
 		   				
 		   				
 		   				for(int subDown = 0; subDown < dconnections ; subDown ++){
 		   					
 		   				    files[subDown]= gui.df[currThread].getSubDownId(subDown);
+		   				    	/*if(gui.df[currThread].isSubDownComplete(subDown) == 1) {
+		   				    		gui.df[currThread].OneSubIsCompleted();
+		   				    	}*/
 		   				   		
-		   				   		//Βεβαιωση ότι δεν έχει ολοκληρωθεί το κατέβασμα
 		   				   		if(gui.df[currThread].isSubDownComplete(subDown) == 0){
 		   				      	
 		   				      		Downloadcomplete = 0; //Download Incomplete
@@ -345,13 +400,15 @@ public class downloadmanagerwindow {
 		   				      		break;
 		   				      		
 		   				      	}
+		   				   		
 		   				      
 		   				     }
 		   				      
-		   				if (Downloadcomplete == 1 && gui.df[currThread].getPause() == false)
+		   				if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true)
 		   					{
-		   					System.out.println(Downloadcomplete);
-		   					//Ένωση των κατεβασμένων αρχείων και διαγραφή των "κωμματιων"
+		   					
+		   					
+		   					if(!gui.df[currThread].getPause()) {
 								try {
 									futils.concat(files,gui.df[currThread].FilePath);
 								} catch (IOException e) {
@@ -360,17 +417,31 @@ public class downloadmanagerwindow {
 							for(int fileid=0;fileid < dconnections;fileid++) {
 		   						try {
 									futils.delete(files[fileid]);
+									
+									gui.df[currThread].Complete = 1;
+									
 								} catch (IOException e) {
 									e.printStackTrace();
 								}
 		   					}
-		   					gui.df[currThread].Complete = 1; 
-		   					gui.updateStatus(currThread,false);//Ενημέρωση GUI
+		   					}
 		   					
-		   					}     
+		   					gui.updateStatus(currThread,false);
+		   					
+		   					}
+		   					
 		   				  
 		   				  }
+		   				try {
+							Thread.sleep(300);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+		   				
 		   		}
+		   gui.model.setValueAt("100% 0KB/s",currThread,2);
+		   System.out.println(Downloadcomplete+" Completed or no");
 			}
 	}
 	
@@ -378,7 +449,7 @@ public class downloadmanagerwindow {
 	public void updateStatus( int currThread, boolean dFailed){
 		if (!dFailed){
 		//TODO FILESIZE
-		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,2);	
+		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"% "+this.df[currThread].getDownloadSpeed(),currThread,2);	
    		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
    		//TODO DOWNLOAD SPEED
    		downloadmanagerwindow.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
@@ -395,7 +466,7 @@ public class downloadmanagerwindow {
 
 }
 	
-	//Πρόσθεση λήψης στον πίνακα ληψεων
+	
 	public void addDownload(DownloadFile d) {
 	       
         DownloadFile[] dab = new DownloadFile[df.length+1];
@@ -404,5 +475,13 @@ public class downloadmanagerwindow {
         df = dab;
         
     	}
+	//RATELIMIT
+	public void DownloadSpeedLimit(int s) {
+		if(df.length!=0) {
+		float rateper = s/df.length;
+		for (int i=0;i<df.length;i++) {
+			df[i].setRateLimit(rateper);
+		}
+		}
+	}
 }
-
