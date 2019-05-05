@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import javax.swing.JFrame;
@@ -43,9 +45,9 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 
-public class downloadmanagerwindow {
+public class DownloadManager {
 	JPopupMenu popup; 
-	static ClassLoader classLoader = downloadmanagerwindow.class.getClassLoader();
+	static ClassLoader classLoader = DownloadManager.class.getClassLoader();
 	static String path  = classLoader.getResource("NekoAtsumeFace.png").getPath();
 	static Image image = Toolkit.getDefaultToolkit().getImage(path);
 	public int DownloadID = 0;
@@ -56,7 +58,7 @@ public class downloadmanagerwindow {
 	private JTextField textField;
 	private JTable table_1;
 	private JTable table_2;
-	static downloadmanagerwindow window;
+	static DownloadManager window;
 	private DefaultTableModel model;
 	public int li_TotalConnections = 5;
 	public int li_BufferLen = 4;
@@ -72,7 +74,7 @@ public class downloadmanagerwindow {
 			public void run() {
 				try {
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-					window = new downloadmanagerwindow();
+					window = new DownloadManager();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -125,7 +127,7 @@ public class downloadmanagerwindow {
 	}
 	
 
-	public downloadmanagerwindow() {
+	public DownloadManager() {
 		initialize();
 	}
 
@@ -193,6 +195,8 @@ public class downloadmanagerwindow {
 				return;
 			}
 			ls_FileLoc = textField.getText();
+			
+			if(isUrl(ls_FileLoc)=="URL") {System.out.println("it is a URL");}
 			try {
 				String ext = getContentTypeA.gContentTypeA(ls_FileLoc);
 				System.out.println(ext);
@@ -204,8 +208,7 @@ public class downloadmanagerwindow {
 			
 			model.addRow(item);
 			trayframe.modelTray.addRow(itemTray);
-			/*li_TotalConnections = Integer.parseInt((String)cmbConnection.getSelectedItem()); 
-			li_BufferLen = Integer.parseInt((String)cmbMemory.getSelectedItem());*/ 
+			
 			
 			
 		    DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
@@ -217,7 +220,7 @@ public class downloadmanagerwindow {
 				pool.execute(dMonitor);
 				DownloadID = DownloadID + 1;
 				textField.setText("");
-				if(RateState=true) {
+				if(RateState==true) {
 					DownloadSpeedLimit(100);
 				}
 				
@@ -341,10 +344,10 @@ public class downloadmanagerwindow {
 	
 	class Monitor extends Thread{
 
-			downloadmanagerwindow gui;
+			DownloadManager gui;
 		   int threadIndex;
 		   
-		   public Monitor(downloadmanagerwindow dm_frame,int idx){
+		   public Monitor(DownloadManager dm_frame,int idx){
 		   	gui=dm_frame;
 		   	threadIndex = idx;
 		  	
@@ -452,7 +455,7 @@ public class downloadmanagerwindow {
 		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"% "+this.df[currThread].getDownloadSpeed(),currThread,2);	
    		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
    		//TODO DOWNLOAD SPEED
-   		downloadmanagerwindow.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
+   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
 		}
 		else {
 		String str="Failed";
@@ -460,7 +463,7 @@ public class downloadmanagerwindow {
 		this.model.setValueAt((Object)str,currThread,2);
    		this.model.setValueAt((Object)str,currThread,3);
    		//this.model.setValueAt((Object)str,currThread,4);
-   		downloadmanagerwindow.trayframe.modelTray.setValueAt((Object)str,currThread,1);
+   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
 		}
 
 
@@ -481,7 +484,20 @@ public class downloadmanagerwindow {
 		float rateper = s/df.length;
 		for (int i=0;i<df.length;i++) {
 			df[i].setRateLimit(rateper);
-		}
+			}
 		}
 	}
+	//URLHandle
+	public String isUrl(String u) {
+		String isit = null;
+		final String URL_REGEX = "^((https?|ftp)://|(www|ftp)\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)+([/?].*)?$";
+		Pattern p = Pattern.compile(URL_REGEX);
+		Matcher m = p.matcher(u);
+		if(m.find()) {
+		    isit="URL";
+		}
+		else {isit="Torrent";}
+		return isit;
+	}
+	
 }
