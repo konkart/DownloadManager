@@ -5,12 +5,11 @@ import java.util.*;
 
 public class FileUtils{
 	InputStream in = null;
-	
 	int concatcomplete=0;
 	RandomAccessFile raf;
 	public void concat(String args[],String au) throws IOException{
 	String[] getname = au.split("/");
-	String outfile=getFilename(getname[getname.length-1]);
+	String outfile=URLHandler.getFilename(getname[getname.length-1]);
 	File f = new File(outfile);
 	
 	OutputStream out = new FileOutputStream("C:\\Users\\wcwra\\Videos\\Desktop\\"+f);
@@ -34,17 +33,9 @@ public class FileUtils{
 
 
 
-public static String getFilename(String pathfilename) {
-    		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf('\\'));
-   			if (p >= 0) {
-     		return pathfilename.substring(p + 1);
-   			} 
-   			else {
-     			 return pathfilename;
-    		}
-  		} 	
+ 	
   	public void delete(String filename) throws IOException {
-  	String name=getFilename(filename);
+  	String name=URLHandler.getFilename(filename);
     File f = new File("C:\\Users\\wcwra\\Videos\\Desktop\\"+name);
     f.delete();
   }

@@ -17,8 +17,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -58,6 +61,7 @@ public class DownloadManager {
 	private JTextField textField;
 	private JTable table_1;
 	private JTable table_2;
+	public String ls_FileLoc;
 	static DownloadManager window;
 	private DefaultTableModel model;
 	public int li_TotalConnections = 5;
@@ -185,29 +189,54 @@ public class DownloadManager {
 		{
 		  public void actionPerformed(ActionEvent e)
 		  {
-			String ls_FileLoc;
+			
 			
 			if (textField.getText().equals("")){
-				JOptionPane.showMessageDialog(
-			             null,"URL is Invalid or Empty.Please enter valid URL",
-         				 "ERROR",JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
 
 				return;
 			}
-			ls_FileLoc = textField.getText();
 			
-			if(isUrl(ls_FileLoc)=="URL") {System.out.println("it is a URL");}
-			try {
-				String ext = getContentTypeA.gContentTypeA(ls_FileLoc);
-				System.out.println(ext);
-			} catch (IOException e1) {
-				e1.printStackTrace();
+			
+			if(URLHandler.isUrl(textField.getText())=="URL") {
+				System.out.println("it is a URL");
+				ls_FileLoc = textField.getText();
+				try {
+					String ext = URLHandler.gContentTypeA(ls_FileLoc);
+					System.out.println(ext);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				String[] item={""+DownloadID+"",ls_FileLoc,"B","C",getDateTime()};
+				String[] itemTray={ls_FileLoc,"B"};
+				
+				model.addRow(item);
+				trayframe.modelTray.addRow(itemTray);
+				
 			}
-			String[] item={""+DownloadID+"",ls_FileLoc,"B","C",getDateTime()};
-			String[] itemTray={ls_FileLoc,"B"};
+			else if (URLHandler.isUrl(textField.getText())=="Torrent") {
+				ls_FileLoc = textField.getText();
+				String[] magnetParts = ls_FileLoc.split("&"); 
+				String toName = magnetParts[1];
+				String[] Split_toEq = toName.split("=");
+				String NameTo = Split_toEq[1];
+				try {
+					NameTo = URLDecoder.decode(NameTo,StandardCharsets.UTF_8.name());
+				} catch (UnsupportedEncodingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				System.out.println(NameTo);
+				/*Torrent to = new Torrent(ls_FileLoc,DownloadID);
+				
+				pool.execute(to);*/
+			}
+			else {
+				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 			
-			model.addRow(item);
-			trayframe.modelTray.addRow(itemTray);
+			
 			
 			
 			
@@ -488,16 +517,6 @@ public class DownloadManager {
 		}
 	}
 	//URLHandle
-	public String isUrl(String u) {
-		String isit = null;
-		final String URL_REGEX = "^((https?|ftp)://|(www|ftp)\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)+([/?].*)?$";
-		Pattern p = Pattern.compile(URL_REGEX);
-		Matcher m = p.matcher(u);
-		if(m.find()) {
-		    isit="URL";
-		}
-		else {isit="Torrent";}
-		return isit;
-	}
+	
 	
 }
