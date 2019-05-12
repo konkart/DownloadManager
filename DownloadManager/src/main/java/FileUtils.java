@@ -29,6 +29,7 @@ public class FileUtils{
     out.close();
     
 	concatcomplete=1;
+	System.out.println("concat complete");
 	}
 
 

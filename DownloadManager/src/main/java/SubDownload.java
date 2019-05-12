@@ -59,6 +59,7 @@ public void run(){
 				BytesDownloadedP = f.length();
 				FileStartPos=FileStartPos+f.length();
 				uc.setRequestProperty("Range","bytes=" +(FileStartPos) + "-"+ FileEndPos);
+				System.out.println("ALREADY");
 				outputStream = new FileOutputStream(f,true);
 				Paused=false;
 				}
@@ -68,11 +69,9 @@ public void run(){
 				}
 			InputStream inputStream =  uc.getInputStream();
 			byte[] buffer = Buffer;
-			while(BytesDownloaded < (FileEndPos - FileStartPos))
+			while(BytesDownloaded < (FileEndPos - FileStartPos) && Paused==false)
 			{	StartTime = System.currentTimeMillis();
-				if(Paused==true) {
-					Thread.sleep(3000);
-				}
+				
 				
 					
 				while (Paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
@@ -88,11 +87,7 @@ public void run(){
 		            	Counter=0;
 		            	Thread.sleep(inc);
 		            	}
-		            	
-		            	//DOWNLOAD SPEED LIMIT TEST,TODO INTERVAL AND LIMIT CHECK
-		            	
-		        	
-		        //--------------------  
+
 		        	
 					} 
 				
@@ -100,13 +95,14 @@ public void run(){
 			}
 			outputStream.close();
 	        inputStream.close();
+	        System.out.println("IsCLosed");
 			//Finished Downloading
 	        //System.out.println(f.getName() +" "+ f.length()+"size // "+SubDownloadId+" // "+(FileStartPos)+" - "+FileEndPos);
 	        if(Paused==false){
 	        Complete=1;
 	        
 			}
-	        System.out.println("dab");
+
 
 		}catch(Exception e){
 			System.out.println(e);

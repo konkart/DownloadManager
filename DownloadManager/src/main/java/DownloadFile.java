@@ -110,10 +110,10 @@ public int StartDownload() throws IOException{
 					ld_FStartPos = 0;
 					ld_FEndPos= FileSize;
 					String[] nameof = FileLoc.split("/");
-					String nameofFile = nameof[nameof.length-1];
+					String nameofFile = nameof[nameof.length-1]+"dat";
 					sd[0] = new SubDownload(nameofFile,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);
 					StartTime=System.currentTimeMillis();
-					pool.execute(sd[li_conn]);
+					pool.execute(sd[0]);
 					//sd[0].start();
 					ActiveSubConn = ActiveSubConn + 1;
 				}

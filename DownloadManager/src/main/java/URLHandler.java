@@ -12,6 +12,7 @@ public class URLHandler {
 		URL newurl = new URL(a);
 		URLConnection con = newurl.openConnection();
 		cont = con.getContentType();
+		System.out.println(con.getHeaderField("Connection"));
 		String[] contentA = cont.split("/");
 		String content = contentA[1];
 		return content;

@@ -54,9 +54,11 @@ public class DownloadManager {
 	static String path  = classLoader.getResource("NekoAtsumeFace.png").getPath();
 	static Image image = Toolkit.getDefaultToolkit().getImage(path);
 	public int DownloadID = 0;
+	public int TorrentID = 0;
 	static TrayIcon trayIcon = new TrayIcon(image, "Tester2");
 	static JFrame frame;
 	public DownloadFile df[] = new  DownloadFile[0];
+	public Torrent tr[] =new Torrent[0];
 	static TrayFrame trayframe;
 	private JTextField textField;
 	private JTable table_1;
@@ -64,12 +66,14 @@ public class DownloadManager {
 	public String ls_FileLoc;
 	static DownloadManager window;
 	private DefaultTableModel model;
+	private DefaultTableModel model2;
 	public int li_TotalConnections = 5;
 	public int li_BufferLen = 4;
 	public boolean RateState=false;
 	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
+	JTabbedPane tabbedPane;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) {
 		System.setProperty("http.agent", "Chrome");
@@ -143,7 +147,7 @@ public class DownloadManager {
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
 		frame.getContentPane().setLayout(null);
 		
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 42, 464, 295);
 		frame.getContentPane().add(tabbedPane);
 		
@@ -197,8 +201,9 @@ public class DownloadManager {
 				return;
 			}
 			
-			
+			String type;
 			if(URLHandler.isUrl(textField.getText())=="URL") {
+				type = "URL";
 				System.out.println("it is a URL");
 				ls_FileLoc = textField.getText();
 				try {
@@ -207,14 +212,28 @@ public class DownloadManager {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				String[] item={""+DownloadID+"",ls_FileLoc,"B","C",getDateTime()};
-				String[] itemTray={ls_FileLoc,"B"};
+				String[] item={""+DownloadID+"",ls_FileLoc,"0% 0KB/s","0",getDateTime()};
+				String[] itemTray={ls_FileLoc,"0%"};
 				
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
-				
+				/*-------OOOOO-------*/
+				DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
+			    addDownload(download);
+			    
+					//df[DownloadID].start();
+					Monitor dMonitor = new Monitor(window,DownloadID,type);
+					pool.execute(df[DownloadID]);
+					pool.execute(dMonitor);
+					DownloadID = DownloadID + 1;
+					textField.setText("");
+					if(RateState==true) {
+						DownloadSpeedLimit(100);
+					}
+				/*--------------*/
 			}
 			else if (URLHandler.isUrl(textField.getText())=="Torrent") {
+				type="Torrent";
 				ls_FileLoc = textField.getText();
 				String[] magnetParts = ls_FileLoc.split("&"); 
 				String toName = magnetParts[1];
@@ -226,10 +245,19 @@ public class DownloadManager {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				System.out.println(NameTo);
-				/*Torrent to = new Torrent(ls_FileLoc,DownloadID);
+				String[] item={""+TorrentID+"",NameTo,"0% 0KB/s","0",getDateTime(),ls_FileLoc};
+				String[] itemTray={NameTo,"0%"};
 				
-				pool.execute(to);*/
+				model2.addRow(item);
+				trayframe.modelTray.addRow(itemTray);
+				Monitor dMonitor = new Monitor(window,TorrentID,type);
+				System.out.println(NameTo);
+				Torrent to = new Torrent(ls_FileLoc,TorrentID);
+				addTorrent(to);
+				
+				pool.execute(tr[TorrentID]);
+				pool.execute(dMonitor);
+				TorrentID=TorrentID+1;
 			}
 			else {
 				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
@@ -240,18 +268,7 @@ public class DownloadManager {
 			
 			
 			
-		    DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
-		    addDownload(download);
 		    
-				//df[DownloadID].start();
-				Monitor dMonitor = new Monitor(window,DownloadID);
-				pool.execute(df[DownloadID]);
-				pool.execute(dMonitor);
-				DownloadID = DownloadID + 1;
-				textField.setText("");
-				if(RateState==true) {
-					DownloadSpeedLimit(100);
-				}
 				
 		  }
 		});
@@ -287,27 +304,28 @@ public class DownloadManager {
 			new Object[][] {
 			},
 			new String[] {
-					"ID","Name", "Progress", "Size", "Date"
+					"ID","Name", "Progress", "Size", "Date" , "Magnet"
 			}
 		));
 		scrollPane_1.setViewportView(table_2);
-		
+		model2 = (DefaultTableModel) table_2.getModel();
 	
 		popup = new JPopupMenu();
 	    pause = new JMenuItem("Pause");
 	    popup.add(pause);
 	    resume = new JMenuItem("resume");
-	    
-	    popup.add(resume);
+	    popup.add(resume).addActionListener(e-> {
+	        // do something
+	    });;
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
-	    
-	   
+	    table_2.addMouseListener(popupListener);
 		}	
 	
 	
 	
 	class PopupListener extends MouseAdapter {
+		String type = null ;
 	    public void mousePressed(MouseEvent e) {
 	        maybeShowPopup(e);
 	    }
@@ -315,50 +333,74 @@ public class DownloadManager {
 	    public void mouseReleased(MouseEvent e) {
 	        maybeShowPopup(e);
 	    }
+	    public PopupListener() {
+	    	
+	    	
+	    	
+	    pause.addActionListener(new ActionListener()
+		{
+			
+			public void actionPerformed(ActionEvent e)
+			  {
+					if(tabbedPane.getSelectedIndex()==0) {
+						type = "URL";
+					}
+					else {type="Torrent";}
+					int column = 0;
+					System.out.println(type);
+					if (type=="URL") {
+						
+						int row = table_1.getSelectedRow();
+	    				String value = table_1.getModel().getValueAt(row, column).toString();
+	    				System.out.println(value);
+	    				System.out.println(df[Integer.parseInt(value)]);
+	    				//pool.shutdownNow();
+	    				df[Integer.parseInt(value)].PauseDownload();
+	    				System.out.println(df.length);
+					}
+					else {
+						int row = table_2.getSelectedRow();
+						String value = table_2.getModel().getValueAt(row, column).toString();
+						tr[Integer.parseInt(value)].setTorPaused();
+					}
+		
+			  }
+		});
+	    resume.addActionListener(new ActionListener()
+		{
+			  public void actionPerformed(ActionEvent e)
+			  {
+				  
+				  int column = 0;
+				  if (type=="URL") {
+				  int row = table_1.getSelectedRow();
+				  String value = table_1.getModel().getValueAt(row, column).toString();
+				  String url =  table_1.getModel().getValueAt(row, 1).toString();
+				  System.out.println(df.length);
+				  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
+				  df[Integer.parseInt(value)]=download;
+				  pool.execute(df[Integer.parseInt(value)]);
+				  //df[Integer.parseInt(value)].ResumeDownload();
+				  }
+				  else if(type=="Torrent"){
+					  int row = table_2.getSelectedRow();
+    				  String value = table_2.getModel().getValueAt(row, column).toString();
+    				  String magnet = table_2.getModel().getValueAt(row, 5).toString();
+    				  Torrent to = new Torrent(magnet,Integer.parseInt(value));
+    				  tr[Integer.parseInt(value)]=to;
+    				  pool.execute(tr[Integer.parseInt(value)]);
+				  }
+			  }
 
+			
+		});
+	    }
 	    private void maybeShowPopup(MouseEvent e) {
 	        if (e.isPopupTrigger()) {
 	        	//PAUSE DOWNLOAD BUTTON ACTION
 	        	
-	    	    pause.addActionListener(new ActionListener()
-	    		{
-	    			  
-					public void actionPerformed(ActionEvent e)
-	    			  {
-							
-							int column = 0;
-							int row = table_1.getSelectedRow();
-	    				  String value = table_1.getModel().getValueAt(row, column).toString();
-	    				  System.out.println(value);
-	    				  System.out.println(df[Integer.parseInt(value)]);
-	    				  //pool.shutdownNow();
-	    				  df[Integer.parseInt(value)].PauseDownload();
-	    				  
-	    		
-	    			  }
-	    		});
-	    	    resume.addActionListener(new ActionListener()
-	    		{
-	    			  public void actionPerformed(ActionEvent e)
-	    			  {
-	    				  //ExecutorService pool = Executors.newCachedThreadPool();
-	    				  int column = 0;
-	    				  int row = table_1.getSelectedRow();
-	    				  String value = table_1.getModel().getValueAt(row, column).toString();
-	    				  String url =  table_1.getModel().getValueAt(row, 1).toString();
-	    				  df[Integer.parseInt(value)].ResumeDownload();
-	    					  /*DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen-1);
-	    					    
-	    				  	DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
-	    				    addDownload(download);
-	    				    Monitor dMonitor = new Monitor(window,Integer.parseInt(value));
-	    				    pool.execute(df[DownloadID]);
-	    					pool.execute(dMonitor);*/
-	    						
-	    						
-	    				  
-	    			  }
-	    		});
+	    	    
+	    	    
 	            popup.show(e.getComponent(),
 	                       e.getX(), e.getY());
 	        }
@@ -374,12 +416,12 @@ public class DownloadManager {
 	class Monitor extends Thread{
 
 			DownloadManager gui;
-		   int threadIndex;
-		   
-		   public Monitor(DownloadManager dm_frame,int idx){
+			int threadIndex;
+			String typeof;
+		   public Monitor(DownloadManager dm_frame,int idx,String type){
 		   	gui=dm_frame;
 		   	threadIndex = idx;
-		  	
+		  	typeof = type;
 		   }
 
 		   public void run(){
@@ -391,13 +433,14 @@ public class DownloadManager {
 		   FileUtils futils = new FileUtils();
 
 		   currThread= threadIndex;
+		   if (typeof=="URL") {
 		   //gui.updateStatus(currThread);
 		   if (gui.df[currThread].FileSize == -1){
 		   		gui.df[currThread].Complete =-1;
 				JOptionPane.showMessageDialog(
 				      	 null,"Download Failed.Try Downloading Again or verify URL is Correct" ,
               		 "INFORMATION",JOptionPane.INFORMATION_MESSAGE);
-              gui.updateStatus(currThread,true);
+              gui.updateStatus(currThread,true,typeof);
               		 				
 		   		}
 		   			
@@ -410,7 +453,7 @@ public class DownloadManager {
 		   				
 		   				if (gui.df[currThread].Complete == 0 && gui.df[currThread].ActiveSubConn == dconnections ){
 		   				
-		   				gui.updateStatus(currThread,false);
+		   				gui.updateStatus(currThread,false,typeof);
 		   				
 		   				
 		   				
@@ -458,7 +501,7 @@ public class DownloadManager {
 		   					}
 		   					}
 		   					
-		   					gui.updateStatus(currThread,false);
+		   					gui.updateStatus(currThread,false,typeof);
 		   					
 		   					}
 		   					
@@ -473,30 +516,60 @@ public class DownloadManager {
 		   				
 		   		}
 		   gui.model.setValueAt("100% 0KB/s",currThread,2);
-		   System.out.println(Downloadcomplete+" Completed or no");
-			}
+		   }
+		   else if(typeof=="Torrent") {
+			   System.out.println("monitoring");
+			   while(gui.tr[currThread].Complete == 0){
+				   
+				   gui.updateStatus(currThread,false,typeof);
+				   try {
+						Thread.sleep(300);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+			   }
+			   gui.model2.setValueAt("100%",currThread,2);
+		   }
+		}
+		   
 	}
 	
 	//Method to update our data
-	public void updateStatus( int currThread, boolean dFailed){
-		if (!dFailed){
-		//TODO FILESIZE
-		this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"% "+this.df[currThread].getDownloadSpeed(),currThread,2);	
-   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
-   		//TODO DOWNLOAD SPEED
-   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
+	public void updateStatus( int currThread, boolean dFailed,String type){
+		if (type=="URL"){
+			if (!dFailed){
+			this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"% "+this.df[currThread].getDownloadSpeed(),currThread,2);	
+	   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
+	   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
+			}
+			else {
+			String str="Failed";
+			//this.model.setValueAt((Object)str,currThread,1);
+			this.model.setValueAt((Object)str,currThread,2);
+	   		this.model.setValueAt((Object)str,currThread,3);
+	   		//this.model.setValueAt((Object)str,currThread,4);
+	   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
+			}
 		}
-		else {
-		String str="Failed";
-		//this.model.setValueAt((Object)str,currThread,1);
-		this.model.setValueAt((Object)str,currThread,2);
-   		this.model.setValueAt((Object)str,currThread,3);
-   		//this.model.setValueAt((Object)str,currThread,4);
-   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
+		else if(type=="Torrent") {
+			if (!dFailed){
+				this.model2.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,2);	
+		   		this.model2.setValueAt(this.tr[currThread].getDownloaded(),currThread,3);
+		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,1);
+				}
+				else {
+				String str="Failed";
+				//this.model.setValueAt((Object)str,currThread,1);
+				this.model2.setValueAt((Object)str,currThread,2);
+		   		this.model2.setValueAt((Object)str,currThread,3);
+		   		//this.model.setValueAt((Object)str,currThread,4);
+		   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
+				}
+			
 		}
-
-
-}
+	}
+	
 	
 	
 	public void addDownload(DownloadFile d) {
@@ -505,6 +578,14 @@ public class DownloadManager {
         System.arraycopy(df, 0, dab, 0, df.length);
         dab[dab.length-1] = d;
         df = dab;
+        
+    	}
+	public void addTorrent(Torrent d) {
+	       
+        Torrent[] dab = new Torrent[tr.length+1];
+        System.arraycopy(tr, 0, dab, 0, tr.length);
+        dab[dab.length-1] = d;
+        tr = dab;
         
     	}
 	//RATELIMIT
