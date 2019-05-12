@@ -379,7 +379,9 @@ public class DownloadManager {
 				  System.out.println(df.length);
 				  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
 				  df[Integer.parseInt(value)]=download;
+				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"URL");
 				  pool.execute(df[Integer.parseInt(value)]);
+				  pool.execute(dMonitor);
 				  //df[Integer.parseInt(value)].ResumeDownload();
 				  }
 				  else if(type=="Torrent"){
@@ -388,7 +390,9 @@ public class DownloadManager {
     				  String magnet = table_2.getModel().getValueAt(row, 5).toString();
     				  Torrent to = new Torrent(magnet,Integer.parseInt(value));
     				  tr[Integer.parseInt(value)]=to;
+    				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"Torrent");
     				  pool.execute(tr[Integer.parseInt(value)]);
+    				  pool.execute(dMonitor);
 				  }
 			  }
 
@@ -479,26 +483,28 @@ public class DownloadManager {
 		   				      
 		   				     }
 		   				      
-		   				if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true)
-		   					{
+		   				if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true){
 		   					
 		   					
 		   					if(!gui.df[currThread].getPause()) {
-								try {
-									futils.concat(files,gui.df[currThread].FilePath);
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
+									try {
+										futils.concat(files,gui.df[currThread].FilePath);
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
 							for(int fileid=0;fileid < dconnections;fileid++) {
-		   						try {
-									futils.delete(files[fileid]);
-									
-									gui.df[currThread].Complete = 1;
-									
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
+			   						try {
+										futils.delete(files[fileid]);
+										
+										gui.df[currThread].Complete = 1;
+										
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
+		   						}
 		   					}
+		   					else {
+		   						gui.df[currThread].Complete = 1;
 		   					}
 		   					
 		   					gui.updateStatus(currThread,false,typeof);
@@ -515,7 +521,7 @@ public class DownloadManager {
 						}
 		   				
 		   		}
-		   gui.model.setValueAt("100% 0KB/s",currThread,2);
+		   gui.model.setValueAt(String.valueOf(gui.df[currThread].DownloadProgress())+"% 0KB/s",currThread,2);
 		   }
 		   else if(typeof=="Torrent") {
 			   System.out.println("monitoring");
@@ -529,7 +535,7 @@ public class DownloadManager {
 						e.printStackTrace();
 					}
 			   }
-			   gui.model2.setValueAt("100%",currThread,2);
+			   gui.model2.setValueAt(String.valueOf(gui.tr[currThread].getPerc())+"%",currThread,2);
 		   }
 		}
 		   

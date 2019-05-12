@@ -78,9 +78,6 @@ public class Torrent implements Runnable{
 		        Complete = 1;
 		        System.out.println("SWAAAG");
 		    }
-		    else if(Paused==true) {
-		    	client.stop();
-		    }
 		    downloaded=state.getDownloaded();
 		}, 1000).join();
 		System.out.println("started");
