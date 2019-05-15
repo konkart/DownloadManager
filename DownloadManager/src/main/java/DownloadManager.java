@@ -228,6 +228,12 @@ public class DownloadManager {
 					DownloadID = DownloadID + 1;
 					textField.setText("");
 					if(RateState==true) {
+						 try {
+								Thread.sleep(300);
+							} catch (InterruptedException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						DownloadSpeedLimit(100);
 					}
 				/*--------------*/
@@ -357,6 +363,15 @@ public class DownloadManager {
 	    				//pool.shutdownNow();
 	    				df[Integer.parseInt(value)].PauseDownload();
 	    				System.out.println(df.length);
+	    				if(RateState==true) {
+							 try {
+									Thread.sleep(300);
+								} catch (InterruptedException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+							DownloadSpeedLimit(100);
+						}
 					}
 					else {
 						int row = table_2.getSelectedRow();
@@ -382,6 +397,15 @@ public class DownloadManager {
 				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"URL");
 				  pool.execute(df[Integer.parseInt(value)]);
 				  pool.execute(dMonitor);
+				  if(RateState==true) {
+					  try {
+							Thread.sleep(300);
+						} catch (InterruptedException s) {
+							// TODO Auto-generated catch block
+							s.printStackTrace();
+						}
+						DownloadSpeedLimit(100);
+					}
 				  //df[Integer.parseInt(value)].ResumeDownload();
 				  }
 				  else if(type=="Torrent"){
@@ -451,76 +475,55 @@ public class DownloadManager {
 		   
 		   while(gui.df[currThread].Complete == 0)
 		   {
-			   
-		   			
-		   				dconnections = gui.df[currThread].TotConnections;
-		   				
-		   				if (gui.df[currThread].Complete == 0 && gui.df[currThread].ActiveSubConn == dconnections ){
-		   				
-		   				gui.updateStatus(currThread,false,typeof);
-		   				
-		   				
-		   				
-		   				Downloadcomplete = 1;//Flag
-		   				files =  new String[dconnections];
-		   				
-		   				
-		   				for(int subDown = 0; subDown < dconnections ; subDown ++){
-		   					
-		   				    files[subDown]= gui.df[currThread].getSubDownId(subDown);
-		   				    	/*if(gui.df[currThread].isSubDownComplete(subDown) == 1) {
-		   				    		gui.df[currThread].OneSubIsCompleted();
-		   				    	}*/
-		   				   		
-		   				   		if(gui.df[currThread].isSubDownComplete(subDown) == 0){
-		   				      	
-		   				      		Downloadcomplete = 0; //Download Incomplete
-		   				      		
-		   				      		break;
-		   				      		
-		   				      	}
-		   				   		
-		   				      
-		   				     }
-		   				      
-		   				if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true){
-		   					
-		   					
-		   					if(!gui.df[currThread].getPause()) {
-									try {
-										futils.concat(files,gui.df[currThread].FilePath);
-									} catch (IOException e) {
+			   dconnections = gui.df[currThread].TotConnections;
+			   if (gui.df[currThread].Complete == 0 && gui.df[currThread].ActiveSubConn == dconnections ){
+				   gui.updateStatus(currThread,false,typeof);
+				   Downloadcomplete = 1;//Flag
+				   files =  new String[dconnections];
+				   for(int subDown = 0; subDown < dconnections ; subDown ++){
+					   files[subDown]= gui.df[currThread].getSubDownId(subDown);
+					   if(gui.df[currThread].isSubDownComplete(subDown) == 0){
+						   Downloadcomplete = 0; //Download Incomplete
+						   break;
+					   }
+				   }
+				   if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true){
+					   if(!gui.df[currThread].getPause()) {
+						   try {
+							   futils.concat(files,gui.df[currThread].FilePath);
+								} catch (IOException e) {
 										e.printStackTrace();
-									}
+								}
 							for(int fileid=0;fileid < dconnections;fileid++) {
 			   						try {
 										futils.delete(files[fileid]);
-										
 										gui.df[currThread].Complete = 1;
-										
-									} catch (IOException e) {
+			   						} catch (IOException e) {
 										e.printStackTrace();
 									}
 		   						}
 		   					}
-		   					else {
-		   						gui.df[currThread].Complete = 1;
-		   					}
-		   					
-		   					gui.updateStatus(currThread,false,typeof);
-		   					
-		   					}
-		   					
-		   				  
-		   				  }
-		   				try {
-							Thread.sleep(300);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-		   				
-		   		}
+					   else {
+						   gui.df[currThread].Complete = 1;
+						   if(RateState==true) {
+							   try {
+								Thread.sleep(300);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+								DownloadSpeedLimit(100);
+							}
+					   }
+					   gui.updateStatus(currThread,false,typeof);
+				   }
+			   }
+			   try {
+				   Thread.sleep(1000);
+			   } catch (InterruptedException e) {
+				   e.printStackTrace();
+			   }
+		   }
 		   gui.model.setValueAt(String.valueOf(gui.df[currThread].DownloadProgress())+"% 0KB/s",currThread,2);
 		   }
 		   else if(typeof=="Torrent") {
@@ -529,7 +532,7 @@ public class DownloadManager {
 				   
 				   gui.updateStatus(currThread,false,typeof);
 				   try {
-						Thread.sleep(300);
+						Thread.sleep(1000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
