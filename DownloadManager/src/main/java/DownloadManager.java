@@ -29,10 +29,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
-
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -47,6 +52,11 @@ import javax.swing.JTabbedPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
+import javax.swing.JSpinner;
+import javax.swing.JLabel;
+import javax.swing.SpinnerDateModel;
+import java.util.Calendar;
+import javax.swing.SpinnerNumberModel;
 
 public class DownloadManager {
 	JPopupMenu popup; 
@@ -73,6 +83,7 @@ public class DownloadManager {
 	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
+	JMenuItem copyToCl;
 	JTabbedPane tabbedPane;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) {
@@ -143,12 +154,12 @@ public class DownloadManager {
 	private void initialize() {
 		
 		frame = new JFrame();
-		frame.setBounds(100, 100, 500, 387);
+		frame.setBounds(100, 100, 600, 450);
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
 		frame.getContentPane().setLayout(null);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(10, 42, 464, 295);
+		tabbedPane.setBounds(10, 64, 564, 336);
 		frame.getContentPane().add(tabbedPane);
 		
 		JPanel panel = new JPanel();
@@ -156,7 +167,7 @@ public class DownloadManager {
 		panel.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(0, 23, 459, 244);
+		scrollPane.setBounds(0, 23, 559, 285);
 		panel.add(scrollPane);
 		
 		trayframe = new TrayFrame();
@@ -171,7 +182,7 @@ public class DownloadManager {
 			new Object[][] {
 			},
 			new String[] {
-				"ID", "Name", "Progress", "Size", "Date"
+				"ID", "Name", "Progress", "Size", "Date", "URL"
 			}
 		));
 		table_1.getColumnModel().getColumn(0).setPreferredWidth(27);
@@ -181,12 +192,12 @@ public class DownloadManager {
 		//model.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
 		
 		textField = new JTextField();
-		textField.setBounds(10, 11, 365, 20);
+		textField.setBounds(10, 11, 366, 20);
 		frame.getContentPane().add(textField);
 		textField.setColumns(10);
 		
 		JButton btnDownload = new JButton("Download");
-		btnDownload.setBounds(385, 10, 89, 23);
+		btnDownload.setBounds(386, 10, 119, 23);
 		frame.getContentPane().add(btnDownload);
 		
 		btnDownload.addActionListener(new ActionListener()
@@ -212,8 +223,8 @@ public class DownloadManager {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				String[] item={""+DownloadID+"",ls_FileLoc,"0% 0KB/s","0",getDateTime()};
-				String[] itemTray={ls_FileLoc,"0%"};
+				String[] item={""+DownloadID+"",URLHandler.getFilename(ls_FileLoc),"0% 0KB/s","0",getDateTime(),ls_FileLoc};
+				String[] itemTray={URLHandler.getFilename(ls_FileLoc),"0%"};
 				
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
@@ -296,7 +307,7 @@ public class DownloadManager {
 			      }
 			   }
 			});
-		tglbtnNewToggleButton.setBounds(365, 0, 94, 23);
+		tglbtnNewToggleButton.setBounds(465, 0, 94, 23);
 		panel.add(tglbtnNewToggleButton);
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
@@ -314,15 +325,123 @@ public class DownloadManager {
 			}
 		));
 		scrollPane_1.setViewportView(table_2);
+		
+		JSpinner spinner = new JSpinner();
+		spinner.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(1), new Long(1)));
+		spinner.setBounds(370, 44, 34, 20);
+		frame.getContentPane().add(spinner);
+		
+		JLabel lblDay = new JLabel("D");
+		lblDay.setBounds(360, 47, 11, 14);
+		frame.getContentPane().add(lblDay);
+		
+		JLabel lblH = new JLabel("H");
+		lblH.setBounds(410, 47, 11, 14);
+		frame.getContentPane().add(lblH);
+		
+		JSpinner spinner_1 = new JSpinner();
+		spinner_1.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(24), new Long(1)));
+		spinner_1.setBounds(418, 44, 39, 20);
+		frame.getContentPane().add(spinner_1);
+		
+		JLabel lblM = new JLabel("M");
+		lblM.setBounds(461, 47, 11, 14);
+		frame.getContentPane().add(lblM);
+		
+		JSpinner spinner_2 = new JSpinner();
+		spinner_2.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(60), new Long(1)));
+		spinner_2.setBounds(472, 44, 39, 20);
+		frame.getContentPane().add(spinner_2);
 		model2 = (DefaultTableModel) table_2.getModel();
-	
+		
+		JButton btnSchedule = new JButton("Schedule");
+		btnSchedule.setToolTipText("Schedule");
+		btnSchedule.setBounds(515, 10, 59, 54);
+		frame.getContentPane().add(btnSchedule);
+		btnSchedule.addActionListener(new ActionListener()
+		{
+		  public void actionPerformed(ActionEvent e)
+		  {		
+			  if (textField.getText().equals("")){
+  				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
+
+  				return;
+  			}
+			  	Monitor dMonitor = null;
+			  	Long DateToS = (((Long) spinner.getValue() * 24)*60)*60;
+			  	Long HoursToS = ((Long) spinner_1.getValue() *60)*60;
+			  	Long MinToS = (Long) spinner_2.getValue() *60;
+			  	System.out.println(DateToS+" "+HoursToS+" "+MinToS);
+			  	Long timer =  DateToS+HoursToS+MinToS;
+			  	String type = null;
+			  	int tmpID = 0;
+    			if(URLHandler.isUrl(textField.getText())=="URL") {
+    				type = "URL";
+    				System.out.println("it is a URL");
+    				ls_FileLoc = textField.getText();
+    				try {
+    					String ext = URLHandler.gContentTypeA(ls_FileLoc);
+    					System.out.println(ext);
+    				} catch (IOException e1) {
+    					e1.printStackTrace();
+    				}
+    				String[] item={""+DownloadID+"",URLHandler.getFilename(ls_FileLoc),"0% 0KB/s","0",getDateTime(),ls_FileLoc};
+    				String[] itemTray={URLHandler.getFilename(ls_FileLoc),"0%"};
+    				
+    				model.addRow(item);
+    				trayframe.modelTray.addRow(itemTray);
+    				/*-------OOOOO-------*/
+    				DownloadFile download = new DownloadFile(DownloadID,ls_FileLoc,li_TotalConnections,li_BufferLen);
+    			    addDownload(download);
+    			    dMonitor = new Monitor(window,DownloadID,type);
+    			    tmpID = DownloadID;
+    			    DownloadID = DownloadID+1;
+    			    textField.setText("");
+    			}
+    			else if (URLHandler.isUrl(textField.getText())=="Torrent") {
+    				type="Torrent";
+    				ls_FileLoc = textField.getText();
+    				String[] magnetParts = ls_FileLoc.split("&"); 
+    				String toName = magnetParts[1];
+    				String[] Split_toEq = toName.split("=");
+    				String NameTo = Split_toEq[1];
+    				try {
+    					NameTo = URLDecoder.decode(NameTo,StandardCharsets.UTF_8.name());
+    				} catch (UnsupportedEncodingException e1) {
+    					// TODO Auto-generated catch block
+    					e1.printStackTrace();
+    				}
+    				String[] item={""+TorrentID+"",NameTo,"0% 0KB/s","0",getDateTime(),ls_FileLoc};
+    				String[] itemTray={NameTo,"0%"};
+    				
+    				model2.addRow(item);
+    				trayframe.modelTray.addRow(itemTray);
+    				dMonitor = new Monitor(window,TorrentID,type);
+    				System.out.println(NameTo);
+    				Torrent to = new Torrent(ls_FileLoc,TorrentID);
+    				addTorrent(to);
+    				tmpID = TorrentID;
+    				TorrentID = TorrentID+1;
+    				textField.setText("");
+    			}
+    			else {
+    				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
+    				return;
+    			}
+    			if (dMonitor!=null && type!=null) {
+			  	scheduled(timer,type,dMonitor,tmpID);
+    			}
+		  }
+		});
+
 		popup = new JPopupMenu();
 	    pause = new JMenuItem("Pause");
 	    popup.add(pause);
 	    resume = new JMenuItem("resume");
-	    popup.add(resume).addActionListener(e-> {
-	        // do something
-	    });;
+	    popup.add(resume);
+	    copyToCl = new JMenuItem("Copy URL");
+	    popup.add(copyToCl);
+	    
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
 	    table_2.addMouseListener(popupListener);
@@ -341,7 +460,26 @@ public class DownloadManager {
 	    }
 	    public PopupListener() {
 	    	
-	    	
+	    copyToCl.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int column = 5;
+				if(tabbedPane.getSelectedIndex()==0) {
+					type = "URL";
+				}
+				else {type="Torrent";}
+				if (type=="URL") {
+					int row = table_1.getSelectedRow();
+					String value = table_1.getModel().getValueAt(row, column).toString();
+					StringSelection stringSelection = new StringSelection(value);
+					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+					clipboard.setContents(stringSelection, null);
+				}
+				else if (type=="Torrent") {}
+				
+			}
+	    });
 	    	
 	    pause.addActionListener(new ActionListener()
 		{
@@ -606,7 +744,37 @@ public class DownloadManager {
 			}
 		}
 	}
-	//URLHandle
 	
 	
+	public void scheduled(Long x,String t,Monitor d,int ID) {
+		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+            	
+    			
+    			if (t=="URL") {
+    					pool.execute(df[ID]);
+    					pool.execute(d);
+    					
+    					if(RateState==true) {
+    						 try {
+    								Thread.sleep(300);
+    							} catch (InterruptedException e1) {
+    								// TODO Auto-generated catch block
+    								e1.printStackTrace();
+    							}
+    						DownloadSpeedLimit(100);
+    					}
+    				/*--------------*/
+    			}else if(t=="Torrent"){
+    				pool.execute(tr[ID]);
+    				pool.execute(d);
+    			}
+    			
+            	
+                System.out.println("Out of time!");
+            }}, x, TimeUnit.SECONDS);
+        
+	}
 }
