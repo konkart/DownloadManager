@@ -1,3 +1,5 @@
+package gr.konkart.dm;
+
 import java.awt.GraphicsEnvironment;
 import java.awt.MouseInfo;
 import java.awt.Point;

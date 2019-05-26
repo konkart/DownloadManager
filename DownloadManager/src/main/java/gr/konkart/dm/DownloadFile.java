@@ -1,3 +1,5 @@
+package gr.konkart.dm;
+
 import java.io.IOException;
 import java.net.*;
 import java.text.*;
@@ -39,7 +41,7 @@ public class DownloadFile implements Runnable{
 			}catch(Exception e){}
 		};
 public String getBytesDownloaded(){
-		return String.valueOf(BytesDownloaded);}
+		return String.valueOf((BytesDownloaded/1024)/1024);}
 		
 public String getFileSize(){
 		return String.valueOf(FileSize);}
@@ -70,12 +72,12 @@ public int StartDownload() throws IOException{
 			long ld_FStartPos,ld_FEndPos,ld_partsize;
 			String partname;
 			Complete=0;
-			
+			System.out.println("lol");
 			//Multipart Download
 			if (IsPartial==true) {
 			sd = new SubDownload[TotConnections];
 			ld_partsize= (long)(FileSize/TotConnections);
-
+			
 
 			for (li_conn=0;li_conn < TotConnections ;li_conn++){
 
@@ -96,6 +98,7 @@ public int StartDownload() throws IOException{
 						//sd[li_conn].start();
 						
 						ActiveSubConn = ActiveSubConn + 1;
+						System.out.println("lol");
 					}
 
 				
@@ -118,6 +121,7 @@ public int StartDownload() throws IOException{
 					ActiveSubConn = ActiveSubConn + 1;
 				}
 			return li_conn;
+			
 			}
 			
 public int isSubDownComplete(int id){

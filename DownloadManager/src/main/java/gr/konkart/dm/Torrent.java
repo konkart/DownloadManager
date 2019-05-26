@@ -1,3 +1,5 @@
+package gr.konkart.dm;
+
 import java.io.File;
 import java.security.Security;
 import java.time.Duration;
@@ -28,6 +30,8 @@ public class Torrent implements Runnable{
 	long downloaded;
 	int total;
 	int piece;
+	int incomplete;
+	int perce;
 	@Override
 	public void run() {
 			String home = System.getProperty("user.home");
@@ -55,7 +59,7 @@ public class Torrent implements Runnable{
 		});
 
 		// get download directory
-		Path targetDirectory = new File(home+"/Downloads/").toPath();
+		Path targetDirectory = new File(home+"\\Downloads\\").toPath();
 
 		// create file system based backend for torrent data
 		Storage storage = new FileSystemStorage(targetDirectory);
@@ -73,28 +77,37 @@ public class Torrent implements Runnable{
 			
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
-		    if (state.getPiecesRemaining() == 0 ) {
+			incomplete = state.getPiecesIncomplete();
+			perce = (piece*100)/(total);
+		    if (state.getPiecesRemaining() == 0) {
 		        client.stop();
 		        Complete = 1;
-		        System.out.println("SWAAAG");
+		    }
+		    else if(Paused==true) {
+		    	client.stop();
 		    }
 		    downloaded=state.getDownloaded();
 		}, 1000).join();
 		System.out.println("started");
 		}
 	public long getDownloaded() {
-		return downloaded;
+		return (downloaded/1024)/1024;
 	}
+
 	public int getSize() {
 		return total;
 	}
-	public long getPerc() {
-		long p=1;
-		if (total!=0) {
+	public int getPerc() {
+		int p=1;
+		if (perce!=0) {
 		
-		p = (piece*100)/total;
+		return perce;
 		}
-		return p;
+		else {
+			perce = p;
+			return perce;
+		}
+		
 	}
 	public void setTorPaused() {
 		Paused = true;

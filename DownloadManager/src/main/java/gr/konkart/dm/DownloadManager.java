@@ -1,4 +1,7 @@
+package gr.konkart.dm;
+
 import java.awt.AWTException;
+import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Image;
 import java.awt.MenuItem;
@@ -22,6 +25,8 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -54,6 +59,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.JSpinner;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.SpinnerDateModel;
 import java.util.Calendar;
 import javax.swing.SpinnerNumberModel;
@@ -83,7 +89,21 @@ public class DownloadManager {
 	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
+	JMenuItem open;
 	JMenuItem copyToCl;
+	JMenu sectionsMenu;
+	JMenuItem mp4;
+	JMenuItem webm;
+	JMenuItem avi;
+	JMenuItem flv;
+	JMenuItem mp3;
+	JMenuItem ogg;
+	JMenuItem acc;
+	JMenuItem wav;
+	JMenuItem jpg;
+	JMenuItem gif;
+	JMenuItem bmp;
+	JMenuItem png;
 	JTabbedPane tabbedPane;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) {
@@ -275,6 +295,7 @@ public class DownloadManager {
 				pool.execute(tr[TorrentID]);
 				pool.execute(dMonitor);
 				TorrentID=TorrentID+1;
+				textField.setText("");
 			}
 			else {
 				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
@@ -321,7 +342,7 @@ public class DownloadManager {
 			new Object[][] {
 			},
 			new String[] {
-					"ID","Name", "Progress", "Size", "Date" , "Magnet"
+					"ID","Name", "Progress", "Session bytes", "Date" , "Magnet"
 			}
 		));
 		scrollPane_1.setViewportView(table_2);
@@ -435,12 +456,47 @@ public class DownloadManager {
 		});
 
 		popup = new JPopupMenu();
+		open = new JMenuItem("Open");
+		popup.add(open);
+		open.setVisible(false);
 	    pause = new JMenuItem("Pause");
 	    popup.add(pause);
-	    resume = new JMenuItem("resume");
+	    resume = new JMenuItem("Resume");
 	    popup.add(resume);
 	    copyToCl = new JMenuItem("Copy URL");
 	    popup.add(copyToCl);
+	    //Convertion menu
+	    sectionsMenu = new JMenu("Convert to..");
+	    sectionsMenu.setVisible(false);
+	    //Videoformats
+	    mp4 = new JMenuItem("mp4");
+	    sectionsMenu.add(mp4);
+	    flv = new JMenuItem("flv");
+	    sectionsMenu.add(flv);
+	    avi = new JMenuItem("avi");
+	    sectionsMenu.add(avi);
+	    webm = new JMenuItem("webm");
+	    sectionsMenu.add(avi);
+	    //audioFormats
+	    mp3 = new JMenuItem("mp3");
+	    sectionsMenu.add(mp3);
+	    wav = new JMenuItem("wav");
+	    sectionsMenu.add(wav);
+	    ogg = new JMenuItem("ogg");
+	    sectionsMenu.add(ogg);
+	    acc = new JMenuItem("acc");
+	    sectionsMenu.add(acc);
+	    //image formats
+	    png = new JMenuItem("png");
+	    sectionsMenu.add(png);
+	    jpg = new JMenuItem("jpg");
+	    sectionsMenu.add(jpg);
+	    gif = new JMenuItem("gif");
+	    sectionsMenu.add(gif);
+	    bmp = new JMenuItem("bmp");
+	    sectionsMenu.add(bmp);
+
+	    popup.add(sectionsMenu);
 	    
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
@@ -450,15 +506,237 @@ public class DownloadManager {
 	
 	
 	class PopupListener extends MouseAdapter {
+		String file;
+		String progress;
 		String type = null ;
+		String percent;
+		String fileMIME[];
+		String filetype;
+		String home = System.getProperty("user.home");
 	    public void mousePressed(MouseEvent e) {
-	        maybeShowPopup(e);
+	    	if (tabbedPane.getSelectedIndex()==1) {
+	    		open.setVisible(true);
+	    		int row = table_2.getSelectedRow();
+	    		progress = table_2.getModel().getValueAt(row, 2).toString();
+				String percentSplit[] = progress.split("%");
+				percent = percentSplit[0];
+				int per = Integer.parseInt(percent);
+				if (per==100 ){
+					open.setVisible(true);
+				}
+	    	}
+	        if (tabbedPane.getSelectedIndex()==0) {
+	        int row = table_1.getSelectedRow();
+	        file = table_1.getModel().getValueAt(row, 1).toString();
+	        Path source = Paths.get(home+"\\Downloads\\"+file);
+	        try {
+				fileMIME = Files.probeContentType(source).split("/");
+				filetype = fileMIME[0].toString();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			progress = table_1.getModel().getValueAt(row, 2).toString();
+			String percentSplit[] = progress.split("%");
+			percent = percentSplit[0];
+			int per = Integer.parseInt(percent);
+			if (per==100 ){
+				sectionsMenu.setVisible(true);
+				open.setVisible(true);
+				System.out.println(filetype);
+				if (filetype.equals("image")) {
+				    png.setVisible(true);
+				    jpg.setVisible(true);
+				    gif.setVisible(true);
+				    bmp.setVisible(true);
+				    mp4.setVisible(false);
+				    flv.setVisible(false);
+				    avi.setVisible(false);
+				    webm.setVisible(false);
+				    acc.setVisible(false);
+				    ogg.setVisible(false);
+				    mp3.setVisible(false);
+				    wav.setVisible(false);
+				}
+				if (filetype.equals("video")) {
+					mp4.setVisible(true);
+				    flv.setVisible(true);
+				    avi.setVisible(true);
+				    gif.setVisible(true);
+				    webm.setVisible(true);
+				    acc.setVisible(false);
+				    ogg.setVisible(false);
+				    mp3.setVisible(false);
+				    wav.setVisible(false);
+				    png.setVisible(false);
+				    jpg.setVisible(false);
+				    bmp.setVisible(false);
+				}
+				if (filetype.equals("audio")) {
+				    acc.setVisible(true);
+				    ogg.setVisible(true);
+				    mp3.setVisible(true);
+				    wav.setVisible(true);
+				    mp4.setVisible(false);
+				    flv.setVisible(false);
+				    avi.setVisible(false);
+				    gif.setVisible(false);
+				    webm.setVisible(false);
+				    png.setVisible(false);
+				    bmp.setVisible(false);
+				}
+				
+			}
+	        }
+	        
+			
+			maybeShowPopup(e);
 	    }
+	        
 
 	    public void mouseReleased(MouseEvent e) {
 	        maybeShowPopup(e);
 	    }
 	    public PopupListener() {
+	    open.addActionListener(new ActionListener() {
+	    	
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if(tabbedPane.getSelectedIndex()==0) {
+				int row = table_1.getSelectedRow();
+		        file = table_1.getModel().getValueAt(row, 1).toString();
+				File filetoOpen = new File(home+"\\Downloads\\"+file);
+				Desktop desktop = Desktop.getDesktop();
+		        if(filetoOpen.exists())
+					try {
+						desktop.open(filetoOpen);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				if(tabbedPane.getSelectedIndex()==1) {
+					int row = table_2.getSelectedRow();
+			        file = table_2.getModel().getValueAt(row, 1).toString();
+					File foldertoOpen = new File(home+"\\Downloads\\");
+					Desktop desktop = Desktop.getDesktop();
+			        if(foldertoOpen.exists())
+						try {
+							desktop.open(foldertoOpen);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+			}
+	    	
+	    });	
+	    mp4.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.videoConv(home+"\\Downloads\\"+file,"mp4");
+			}
+	    });
+	    webm.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.videoConv(home+"\\Downloads\\"+file,"webm");	
+			}
+	    });
+	    avi.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.videoConv(home+"\\Downloads\\"+file,"avi");
+			}
+	    });
+	    flv.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.videoConv(home+"\\Downloads\\"+file,"flv");
+			}
+	    });
+	    mp3.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.audioConv(home+"\\Downloads\\"+file,"mp3");
+			}
+	    });
+	    ogg.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.audioConv(home+"\\Downloads\\"+file,"ogg");
+			}
+	    });
+	    acc.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.audioConv(home+"\\Downloads\\"+file,"acc");
+			}
+	    });
+	    wav.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.audioConv(home+"\\Downloads\\"+file,"wav");
+			}
+	    });
+	    png.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.imgConv(home+"\\Downloads\\"+file,"png");	
+			}
+	    });
+	    bmp.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.imgConv(home+"\\Downloads\\"+file,"bmp");	
+			}
+	    });
+	    gif.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.imgConv(home+"\\Downloads\\"+file,"gif");
+			}
+	    });
+	    jpg.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+					int row = table_1.getSelectedRow();
+					String file = table_1.getModel().getValueAt(row, 1).toString();
+					FileUtils conv = new FileUtils();
+					conv.imgConv(home+"\\Downloads\\"+file,"jpg");
+			}
+	    });
 	    	
 	    copyToCl.addActionListener(new ActionListener() {
 
@@ -476,7 +754,14 @@ public class DownloadManager {
 					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 					clipboard.setContents(stringSelection, null);
 				}
-				else if (type=="Torrent") {}
+				else if (type=="Torrent") {
+					int row = table_2.getSelectedRow();
+					String value = table_2.getModel().getValueAt(row, column).toString();
+					StringSelection stringSelection = new StringSelection(value);
+					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+					clipboard.setContents(stringSelection, null);
+				}
+				
 				
 			}
 	    });
@@ -529,10 +814,10 @@ public class DownloadManager {
 				  int row = table_1.getSelectedRow();
 				  String value = table_1.getModel().getValueAt(row, column).toString();
 				  String url =  table_1.getModel().getValueAt(row, 1).toString();
-				  System.out.println(df.length);
-				  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
-				  df[Integer.parseInt(value)]=download;
-				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"URL");
+				  
+				  DownloadFile download = new DownloadFile(Integer.parseInt(value),ls_FileLoc,li_TotalConnections,li_BufferLen);
+				  df[Integer.parseInt(value)] = download;
+				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
 				  pool.execute(df[Integer.parseInt(value)]);
 				  pool.execute(dMonitor);
 				  if(RateState==true) {
@@ -563,12 +848,7 @@ public class DownloadManager {
 	    }
 	    private void maybeShowPopup(MouseEvent e) {
 	        if (e.isPopupTrigger()) {
-	        	//PAUSE DOWNLOAD BUTTON ACTION
-	        	
-	    	    
-	    	    
-	            popup.show(e.getComponent(),
-	                       e.getX(), e.getY());
+	        	popup.show(e.getComponent(),e.getX(), e.getY());
 	        }
 	    }
 	}
@@ -597,7 +877,7 @@ public class DownloadManager {
 		   int Downloadcomplete = 1;
 		   String[] files;
 		   FileUtils futils = new FileUtils();
-
+		   System.out.println("Monitor");
 		   currThread= threadIndex;
 		   if (typeof=="URL") {
 		   //gui.updateStatus(currThread);
@@ -654,6 +934,7 @@ public class DownloadManager {
 							}
 					   }
 					   gui.updateStatus(currThread,false,typeof);
+					   System.out.println("Monitor");
 				   }
 			   }
 			   try {
@@ -687,7 +968,7 @@ public class DownloadManager {
 		if (type=="URL"){
 			if (!dFailed){
 			this.model.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"% "+this.df[currThread].getDownloadSpeed(),currThread,2);	
-	   		this.model.setValueAt(this.df[currThread].getBytesDownloaded(),currThread,3);
+	   		this.model.setValueAt(this.df[currThread].getBytesDownloaded()+"MB",currThread,3);
 	   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df[currThread].DownloadProgress())+"%",currThread,1);
 			}
 			else {
@@ -702,7 +983,7 @@ public class DownloadManager {
 		else if(type=="Torrent") {
 			if (!dFailed){
 				this.model2.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,2);	
-		   		this.model2.setValueAt(this.tr[currThread].getDownloaded(),currThread,3);
+		   		this.model2.setValueAt(this.tr[currThread].getDownloaded()+"MB",currThread,3);
 		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,1);
 				}
 				else {
@@ -771,10 +1052,7 @@ public class DownloadManager {
     				pool.execute(tr[ID]);
     				pool.execute(d);
     			}
-    			
-            	
-                System.out.println("Out of time!");
+    			System.out.println("Out of time!");
             }}, x, TimeUnit.SECONDS);
-        
 	}
 }

@@ -1,3 +1,5 @@
+package gr.konkart.dm;
+
 import java.net.*;
 import java.text.NumberFormat;
 import java.io.*;
@@ -25,7 +27,7 @@ public class SubDownload implements Runnable{
 	private volatile boolean Paused = false;
 	FileOutputStream outputStream = null;
 	float Counter=0;
-
+	String home = System.getProperty("user.home");
 public SubDownload(String aSubDownloadId,String aFileLoc,long aFileStartPos,long aFileEndPos,int aBufferSize,int aDownloadID){
 
 		FileLoc=aFileLoc;
@@ -53,7 +55,7 @@ public void run(){
 			uc.setRequestProperty("connection","Keep-Alive");
 
 			//int li_bytesRead;
-			File f = new File("C:\\Users\\wcwra\\Videos\\Desktop\\"+SubDownloadId);
+			File f = new File(home+"\\Downloads\\"+SubDownloadId);
 			if (f.exists()) {
 				
 				BytesDownloadedP = f.length();
