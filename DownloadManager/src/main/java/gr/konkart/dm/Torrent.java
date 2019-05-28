@@ -3,14 +3,22 @@ package gr.konkart.dm;
 import java.io.File;
 import java.security.Security;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTModule;
+import bt.peerexchange.PeerExchangeModule;
+
 import java.nio.file.*;
 import bt.dht.*;
 import bt.runtime.BtClient;
 import bt.runtime.Config;
+import bt.torrent.selector.PieceSelector;
+import bt.torrent.selector.SequentialSelector;
+import bt.tracker.http.HttpTrackerModule;
 
 
 
@@ -44,11 +52,10 @@ public class Torrent implements Runnable{
 		        return Runtime.getRuntime().availableProcessors() * 4;
 		    }
 		};
-		Duration dur = Duration.ofSeconds(1000);
+		Duration dur = Duration.ofSeconds(60);
 		config.setPeerConnectionTimeout(dur);
-		config.setPeerConnectionRetryCount(10);
-		
-		
+		config.setPeerConnectionRetryCount(1);
+		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
 		
 		
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
@@ -63,18 +70,21 @@ public class Torrent implements Runnable{
 
 		// create file system based backend for torrent data
 		Storage storage = new FileSystemStorage(targetDirectory);
-
+		PieceSelector selector= SequentialSelector.sequential();
 		// create client with a private runtime
 		BtClient client = Bt.client()
 		        .config(config)
 		        .storage(storage)
 		        .magnet(FileLoc)
 		        .autoLoadModules()
+		        .module(new HttpTrackerModule())
+		        .module(new PeerExchangeModule())
+		        .module(dhtModule)
 		        .stopWhenDownloaded()
+		        .selector(selector)
 		        .build();
 		
 		client.startAsync(state -> {
-			
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
 			incomplete = state.getPiecesIncomplete();
@@ -88,7 +98,6 @@ public class Torrent implements Runnable{
 		    }
 		    downloaded=state.getDownloaded();
 		}, 1000).join();
-		System.out.println("started");
 		}
 	public long getDownloaded() {
 		return (downloaded/1024)/1024;

@@ -21,8 +21,6 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,18 +29,12 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -50,7 +42,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JTable;
 import javax.swing.UIManager;
 import javax.swing.JTabbedPane;
@@ -60,8 +51,6 @@ import javax.swing.JToggleButton;
 import javax.swing.JSpinner;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.SpinnerDateModel;
-import java.util.Calendar;
 import javax.swing.SpinnerNumberModel;
 
 public class DownloadManager {
@@ -89,6 +78,7 @@ public class DownloadManager {
 	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
+	JMenuItem delete;
 	JMenuItem open;
 	JMenuItem copyToCl;
 	JMenu sectionsMenu;
@@ -458,7 +448,9 @@ public class DownloadManager {
 		popup = new JPopupMenu();
 		open = new JMenuItem("Open");
 		popup.add(open);
-		open.setVisible(false);
+		delete = new JMenuItem("Delete");
+		popup.add(delete);
+		delete.setVisible(false);
 	    pause = new JMenuItem("Pause");
 	    popup.add(pause);
 	    resume = new JMenuItem("Resume");
@@ -515,7 +507,9 @@ public class DownloadManager {
 		String home = System.getProperty("user.home");
 	    public void mousePressed(MouseEvent e) {
 	    	if (tabbedPane.getSelectedIndex()==1) {
-	    		open.setVisible(true);
+	    		sectionsMenu.setVisible(false);
+	    		open.setVisible(false);
+	    		delete.setVisible(false);
 	    		int row = table_2.getSelectedRow();
 	    		progress = table_2.getModel().getValueAt(row, 2).toString();
 				String percentSplit[] = progress.split("%");
@@ -541,8 +535,11 @@ public class DownloadManager {
 			percent = percentSplit[0];
 			int per = Integer.parseInt(percent);
 			if (per==100 ){
+				pause.setVisible(false);
+				resume.setText("Redownload");
 				sectionsMenu.setVisible(true);
 				open.setVisible(true);
+				delete.setVisible(true);
 				System.out.println(filetype);
 				if (filetype.equals("image")) {
 				    png.setVisible(true);
@@ -598,6 +595,40 @@ public class DownloadManager {
 	        maybeShowPopup(e);
 	    }
 	    public PopupListener() {
+	    delete.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if(tabbedPane.getSelectedIndex()==0) {
+					int rowtoDelete = table_1.getSelectedRow();
+			        file = table_1.getModel().getValueAt(rowtoDelete, 1).toString();
+					File filetoDelete= new File(home+"\\Downloads\\"+file);
+					if(filetoDelete.exists()) {
+						try {
+							FileUtils de = new FileUtils();
+							de.delete(file);
+							table_1.getModel().setValueAt("Deleted",rowtoDelete, 3);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+			        }
+				}
+				if(tabbedPane.getSelectedIndex()==1) {
+					int rowtoDelete = table_2.getSelectedRow();
+			        file = table_2.getModel().getValueAt(rowtoDelete, 1).toString();
+					File filetoDelete= new File(home+"\\Downloads\\"+file);
+					if(filetoDelete.exists()) {
+						try {
+							FileUtils de = new FileUtils();
+							de.delete(file);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+			        }
+				}
+			}
+	    	
+	    });
 	    open.addActionListener(new ActionListener() {
 	    	
 			@Override
@@ -607,12 +638,13 @@ public class DownloadManager {
 		        file = table_1.getModel().getValueAt(row, 1).toString();
 				File filetoOpen = new File(home+"\\Downloads\\"+file);
 				Desktop desktop = Desktop.getDesktop();
-		        if(filetoOpen.exists())
+		        if(filetoOpen.exists()) {
 					try {
 						desktop.open(filetoOpen);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
+		        }
 				}
 				if(tabbedPane.getSelectedIndex()==1) {
 					int row = table_2.getSelectedRow();
@@ -813,9 +845,8 @@ public class DownloadManager {
 				  if (type=="URL") {
 				  int row = table_1.getSelectedRow();
 				  String value = table_1.getModel().getValueAt(row, column).toString();
-				  String url =  table_1.getModel().getValueAt(row, 1).toString();
-				  
-				  DownloadFile download = new DownloadFile(Integer.parseInt(value),ls_FileLoc,li_TotalConnections,li_BufferLen);
+				  String url = table_1.getModel().getValueAt(row, 5).toString();
+				  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,li_TotalConnections,li_BufferLen);
 				  df[Integer.parseInt(value)] = download;
 				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
 				  pool.execute(df[Integer.parseInt(value)]);
@@ -871,7 +902,6 @@ public class DownloadManager {
 		   }
 
 		   public void run(){
-		   int dThreadCount=0;
 		   int currThread=0;
 		   int dconnections=0;
 		   int Downloadcomplete = 1;
@@ -973,10 +1003,8 @@ public class DownloadManager {
 			}
 			else {
 			String str="Failed";
-			//this.model.setValueAt((Object)str,currThread,1);
 			this.model.setValueAt((Object)str,currThread,2);
 	   		this.model.setValueAt((Object)str,currThread,3);
-	   		//this.model.setValueAt((Object)str,currThread,4);
 	   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
 			}
 		}
@@ -988,10 +1016,8 @@ public class DownloadManager {
 				}
 				else {
 				String str="Failed";
-				//this.model.setValueAt((Object)str,currThread,1);
 				this.model2.setValueAt((Object)str,currThread,2);
 		   		this.model2.setValueAt((Object)str,currThread,3);
-		   		//this.model.setValueAt((Object)str,currThread,4);
 		   		DownloadManager.trayframe.modelTray.setValueAt((Object)str,currThread,1);
 				}
 			

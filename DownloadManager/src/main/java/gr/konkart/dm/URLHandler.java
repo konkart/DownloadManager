@@ -36,10 +36,10 @@ public class URLHandler {
 	public static String getFilename(String pathfilename) {
 		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf('\\'));
 			if (p >= 0) {
- 		return pathfilename.substring(p + 1);
+				return pathfilename.substring(p + 1);
 			} 
 			else {
- 			 return pathfilename;
+				return pathfilename;
 		}
 		}
 }
