@@ -12,6 +12,7 @@ import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTModule;
 import bt.peerexchange.PeerExchangeModule;
+import bt.protocol.crypto.EncryptionPolicy;
 
 import java.nio.file.*;
 import bt.dht.*;
@@ -38,9 +39,9 @@ public class Torrent implements Runnable{
 	volatile boolean Paused=false;
 	int once = 0;
 	long downloaded;
+	long downloadedS;
 	int total;
 	int piece;
-	int incomplete;
 	int perce;
 	@Override
 	public void run() {
@@ -58,8 +59,10 @@ public class Torrent implements Runnable{
 		config.setPeerConnectionTimeout(dur);
 		config.setPeerConnectionRetryCount(1);
 		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
-		
-		
+		config.setEncryptionPolicy(EncryptionPolicy.REQUIRE_ENCRYPTED);
+		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));
+		config.setMaxPeerConnections(100);
+		config.setNumberOfPeersToRequestFromTracker(30);
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
 		    @Override
 		    public boolean shouldUseRouterBootstrap() {
@@ -79,17 +82,14 @@ public class Torrent implements Runnable{
 		        .storage(storage)
 		        .magnet(FileLoc)
 		        .autoLoadModules()
-		        .module(new HttpTrackerModule())
-		        .module(new PeerExchangeModule())
-		        .module(dhtModule)
 		        .stopWhenDownloaded()
+		        .module(dhtModule)
 		        .selector(selector)
 		        .build();
 		StartTime = System.currentTimeMillis();
 		client.startAsync(state -> {
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
-			incomplete = state.getPiecesIncomplete();
 			perce = (piece*100)/(total);
 		    if (state.getPiecesRemaining() == 0) {
 		        client.stop();
@@ -106,9 +106,10 @@ public class Torrent implements Runnable{
 	}
 	public String getDownloadSpeed() {
 		float current_speed;
-
-		if (downloaded > 0 ) {
-		current_speed = (float)( downloaded / (System.currentTimeMillis() - StartTime));
+		downloadedS=downloaded;
+		if (downloadedS > 0 ) {
+		current_speed = (float)( downloadedS / (System.currentTimeMillis() - StartTime));
+		downloadedS=0;
 		}
 		else {
 		current_speed = 0;
