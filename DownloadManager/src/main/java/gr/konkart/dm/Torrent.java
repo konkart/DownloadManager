@@ -2,6 +2,7 @@ package gr.konkart.dm;
 
 import java.io.File;
 import java.security.Security;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +26,7 @@ import bt.tracker.http.HttpTrackerModule;
 
 public class Torrent implements Runnable{
 	String FileLoc;
+	long StartTime;
 	int Complete;
 	int DownloadId;
 	public Torrent(String aFileLoc,int DownloadID){
@@ -83,7 +85,7 @@ public class Torrent implements Runnable{
 		        .stopWhenDownloaded()
 		        .selector(selector)
 		        .build();
-		
+		StartTime = System.currentTimeMillis();
 		client.startAsync(state -> {
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
@@ -101,6 +103,20 @@ public class Torrent implements Runnable{
 		}
 	public long getDownloaded() {
 		return (downloaded/1024)/1024;
+	}
+	public String getDownloadSpeed() {
+		float current_speed;
+
+		if (downloaded > 0 ) {
+		current_speed = (float)( downloaded / (System.currentTimeMillis() - StartTime));
+		}
+		else {
+		current_speed = 0;
+		}
+		NumberFormat formatter = NumberFormat.getNumberInstance() ;
+		formatter.setMaximumFractionDigits(2);
+
+		return " " + formatter.format(current_speed) + " KB/s ";
 	}
 
 	public int getSize() {

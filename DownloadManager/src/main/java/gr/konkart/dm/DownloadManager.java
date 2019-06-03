@@ -1010,7 +1010,7 @@ public class DownloadManager {
 		}
 		else if(type=="Torrent") {
 			if (!dFailed){
-				this.model2.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,2);	
+				this.model2.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"% "+this.tr[currThread].getDownloadSpeed(),currThread,2);	
 		   		this.model2.setValueAt(this.tr[currThread].getDownloaded()+"MB",currThread,3);
 		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.tr[currThread].getPerc())+"%",currThread,1);
 				}
