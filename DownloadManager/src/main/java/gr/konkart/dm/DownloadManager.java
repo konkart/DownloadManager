@@ -164,12 +164,12 @@ public class DownloadManager {
 	private void initialize() {
 		
 		frame = new JFrame();
-		frame.setBounds(100, 100, 600, 450);
+		frame.setBounds(100, 100, 530, 450);
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
 		frame.getContentPane().setLayout(null);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(10, 64, 564, 336);
+		tabbedPane.setBounds(10, 64, 496, 336);
 		frame.getContentPane().add(tabbedPane);
 		
 		JPanel panel = new JPanel();
@@ -177,7 +177,7 @@ public class DownloadManager {
 		panel.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(0, 23, 559, 285);
+		scrollPane.setBounds(0, 23, 490, 285);
 		panel.add(scrollPane);
 		
 		trayframe = new TrayFrame();
@@ -318,7 +318,7 @@ public class DownloadManager {
 			      }
 			   }
 			});
-		tglbtnNewToggleButton.setBounds(465, 0, 94, 23);
+		tglbtnNewToggleButton.setBounds(384, 0, 94, 23);
 		panel.add(tglbtnNewToggleButton);
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
@@ -339,35 +339,35 @@ public class DownloadManager {
 		
 		JSpinner spinner = new JSpinner();
 		spinner.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(1), new Long(1)));
-		spinner.setBounds(370, 44, 34, 20);
+		spinner.setBounds(238, 42, 34, 20);
 		frame.getContentPane().add(spinner);
 		
 		JLabel lblDay = new JLabel("D");
-		lblDay.setBounds(360, 47, 11, 14);
+		lblDay.setBounds(228, 45, 11, 14);
 		frame.getContentPane().add(lblDay);
 		
 		JLabel lblH = new JLabel("H");
-		lblH.setBounds(410, 47, 11, 14);
+		lblH.setBounds(274, 45, 11, 14);
 		frame.getContentPane().add(lblH);
 		
 		JSpinner spinner_1 = new JSpinner();
 		spinner_1.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(24), new Long(1)));
-		spinner_1.setBounds(418, 44, 39, 20);
+		spinner_1.setBounds(285, 42, 39, 20);
 		frame.getContentPane().add(spinner_1);
 		
 		JLabel lblM = new JLabel("M");
-		lblM.setBounds(461, 47, 11, 14);
+		lblM.setBounds(326, 45, 11, 14);
 		frame.getContentPane().add(lblM);
 		
 		JSpinner spinner_2 = new JSpinner();
 		spinner_2.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(60), new Long(1)));
-		spinner_2.setBounds(472, 44, 39, 20);
+		spinner_2.setBounds(337, 42, 39, 20);
 		frame.getContentPane().add(spinner_2);
 		model2 = (DefaultTableModel) table_2.getModel();
 		
 		JButton btnSchedule = new JButton("Schedule");
 		btnSchedule.setToolTipText("Schedule");
-		btnSchedule.setBounds(515, 10, 59, 54);
+		btnSchedule.setBounds(386, 41, 119, 23);
 		frame.getContentPane().add(btnSchedule);
 		btnSchedule.addActionListener(new ActionListener()
 		{
