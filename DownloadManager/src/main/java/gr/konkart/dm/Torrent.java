@@ -28,40 +28,38 @@ import bt.tracker.http.HttpTrackerModule;
 public class Torrent implements Runnable{
 	String FileLoc;
 	long StartTime;
-	int Complete;
-	int DownloadId;
-	public Torrent(String aFileLoc,int DownloadID){
+	int Complete; //Completion flag
+	int DownloadId; //Download ID
+	public Torrent(String aFileLoc,int DownloadID){//Torrent constructor
 		FileLoc = aFileLoc;
 		DownloadId=DownloadID;
 		Complete=0;
 
 		}
-	volatile boolean Paused=false;
-	int once = 0;
-	long downloaded;
-	long downloadedS;
-	int total;
-	int piece;
-	int perce;
+	volatile boolean Paused=false; //Paused Flag
+	long downloaded;//Downloaded Bytes
+	long downloadedS;//Variable used in download speed(gets 'downloaded's value)
+	int total;//total torrent pieces
+	int piece;//completed pieces
+	int perce;//percentage
 	@Override
 	public void run() {
 			String home = System.getProperty("user.home");
-			Security.setProperty("policy", "unlimited");
 			System.setProperty("java.net.preferIPv4Stack" , "true");
 			
-		Config config = new Config() {
+		Config config = new Config() {//torrent client config
 		    @Override
-		    public int getNumOfHashingThreads() {
+		    public int getNumOfHashingThreads() {//number of threads to use
 		        return Runtime.getRuntime().availableProcessors() * 4;
 		    }
 		};
 		Duration dur = Duration.ofSeconds(60);
 		config.setPeerConnectionTimeout(dur);
-		config.setPeerConnectionRetryCount(1);
+		config.setPeerConnectionRetryCount(1);//peer connection retry count
 		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
 		config.setEncryptionPolicy(EncryptionPolicy.REQUIRE_ENCRYPTED);
-		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));
-		config.setMaxPeerConnections(100);
+		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));//Peer ban duration after failing to connect
+		config.setMaxPeerConnections(100);//max active peer connections
 		config.setNumberOfPeersToRequestFromTracker(30);
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
 		    @Override
@@ -87,24 +85,24 @@ public class Torrent implements Runnable{
 		        .selector(selector)
 		        .build();
 		StartTime = System.currentTimeMillis();
-		client.startAsync(state -> {
+		client.startAsync(state -> {//start client with callback every 1000ms
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
 			perce = (piece*100)/(total);
-		    if (state.getPiecesRemaining() == 0) {
+		    if (state.getPiecesRemaining() == 0) {//if no pieces remaining stop client and flag as completed
 		        client.stop();
 		        Complete = 1;
 		    }
 		    else if(Paused==true) {
 		    	client.stop();
 		    }
-		    downloaded=state.getDownloaded();
+		    downloaded=state.getDownloaded();//get downloaded bytes
 		}, 1000).join();
 		}
-	public long getDownloaded() {
+	public long getDownloaded() {//get downloaded data in Megabytes
 		return (downloaded/1024)/1024;
 	}
-	public String getDownloadSpeed() {
+	public String getDownloadSpeed() {//download speed calculation
 		float current_speed;
 		downloadedS=downloaded;
 		if (downloadedS > 0 ) {
@@ -120,10 +118,10 @@ public class Torrent implements Runnable{
 		return " " + formatter.format(current_speed) + " KB/s ";
 	}
 
-	public int getSize() {
+	public int getSize() {//gets the torrent's data size
 		return total;
 	}
-	public int getPerc() {
+	public int getPerc() {//get percentage completed
 		int p=1;
 		if (perce!=0) {
 		
@@ -135,13 +133,9 @@ public class Torrent implements Runnable{
 		}
 		
 	}
-	public void setTorPaused() {
+	public void setTorPaused() {//funtion that is called to pause/stop the torrent
 		Paused = true;
 	}
-	public void setTorResume() {
-		Paused = false;
-	}
-	
 	
 }
 

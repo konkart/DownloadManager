@@ -13,13 +13,13 @@ public class DownloadFile implements Runnable{
 	public long BytesDownloaded;   //Bytes Downloaded
 	public int TotConnections;       //Total Connections
 	public int BufferSize;			//Buffer Size
-	public SubDownload sd[];
+	public SubDownload sd[];		//Subdownloads array
 	public int DownloadID;
-	public int Complete;
-	public int ActiveSubConn;
+	public int Complete;			//Completion flag
+	public int ActiveSubConn;		//Active SubConnections(Subdownloads)counter
 	public long StartTime;
-	public boolean IsPartial;
-	public volatile boolean Paused = false;
+	public boolean IsPartial;		//Flag to check if webhost supports partial(multipart) download
+	public volatile boolean Paused = false;	//Paused Flag
 	int r=0;
 	volatile float R=0;
 	public URL url;
@@ -72,39 +72,37 @@ public int StartDownload() throws IOException{
 			long ld_FStartPos,ld_FEndPos,ld_partsize;
 			String partname;
 			Complete=0;
-			System.out.println("lol");
-			//Multipart Download
+			//Download initialization
 			if (IsPartial==true) {
+				//Multipart Download initialization
 			sd = new SubDownload[TotConnections];
-			ld_partsize= (long)(FileSize/TotConnections);
+			ld_partsize= (long)(FileSize/TotConnections);//Dividing the file size to get size for each sub part
 			
-
+			//Part initialization
 			for (li_conn=0;li_conn < TotConnections ;li_conn++){
 
-						if ( li_conn == (TotConnections - 1))	{
+						if ( li_conn == (TotConnections - 1)) {//Last part initialization
 							ld_FStartPos=li_conn*ld_partsize;
 							ld_FEndPos= FileSize;
 						}
-						else	{
+						else {//Parts initialization
 							ld_FStartPos=li_conn*ld_partsize;
 							ld_FEndPos= ld_FStartPos + ld_partsize - 1;
 						}
-	
-						partname = "DFL" +  String.valueOf(DownloadID) + String.valueOf(li_conn) + ".dat";
-						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);
+						partname = "DFL" +  String.valueOf(DownloadID) + String.valueOf(li_conn) + ".dat";//part name and temporary extension
+						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);//Subdownload creation
 						StartTime=System.currentTimeMillis();
 						
-						pool.execute(sd[li_conn]);
+						pool.execute(sd[li_conn]);//Subdownload start
 						//sd[li_conn].start();
 						
 						ActiveSubConn = ActiveSubConn + 1;
-						System.out.println("lol");
 					}
 
 				
 				}
 				else {
-					//SingleDownload
+					//Single part download initialization
 					TotConnections = 1;
 					sd = new SubDownload[TotConnections];
 					
@@ -123,15 +121,10 @@ public int StartDownload() throws IOException{
 			return li_conn;
 			
 			}
-			
-public int isSubDownComplete(int id){
+public int isSubDownComplete(int id){//Check if a subdownload is completed
 				return sd[id].Complete;
 			}
-public int isSimpleDownComplete(int id){
-				return sd[id].Complete;
-			}
-			
-public int DownloadProgress(){ 
+public int DownloadProgress(){//Download progress calc
 				int pcount=0;
 				calcBytesDownloaded();
 				if ( BytesDownloaded > 0 && FileSize > 0 )
@@ -139,24 +132,23 @@ public int DownloadProgress(){
 				return pcount;
 			}
 			
-public String getSubDownId(int id)
-			{
+public String getSubDownId(int id){//Get Sub download ID
 				return sd[id].SubDownloadId;
 			}
 			
-public void calcBytesDownloaded(){
+public void calcBytesDownloaded(){//Downloaded bytes calculation
 				BytesDownloaded=0;	
 				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
 					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloadedP;
 					}
 			}
-public  synchronized void OneSubIsCompleted() {
+public  synchronized void OneSubIsCompleted() {//Updates the speed limit on all active subdownloads when one is completed
 	TotConnections =- 1;
 	if (TotConnections!=0) {
 	setRateLimit(R);
 	}
 }
-public void setRateLimit(float x) {
+public void setRateLimit(float x) {//Rate Limit per Sub Download
 				R = x;
 				float r = x/TotConnections;
 				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
@@ -165,12 +157,12 @@ public void setRateLimit(float x) {
 				}	
 			}
 
-public void PauseDownload() {
+public void PauseDownload() {//Paused Sub Downloads
 	for (int i=0;i<sd.length;i++) {
 		sd[i].setPause();
 	}
 }
-public  boolean getPause() {
+public  boolean getPause() {//Checks if paused
 	boolean p = false;
 	for (int i=0;i<sd.length;i++) {
 		p = sd[i].getPause();
@@ -178,18 +170,10 @@ public  boolean getPause() {
 	return p;
 	
 }
-public void ResumeDownload() {
+public void ResumeDownload() {//Resumes the Sub Downloads
 	for (int i=0;i<sd.length;i++) {
 		sd[i].setResume();
 	}
-}
-public  boolean getResume() {
-	boolean p = false;
-	for (int i=0;i<sd.length;i++) {
-		p = sd[i].getResume();
-	}
-	return p;
-	
 }
 		
 public void run(){
@@ -197,7 +181,6 @@ public void run(){
 					try {
 						StartDownload();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 		}

@@ -25,7 +25,7 @@ public TrayFrame() {
 		Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
     	        .getMaximumWindowBounds();
     	Point location = MouseInfo.getPointerInfo().getLocation();
-    	
+    	/* screen position check to always place tray window on bottom right*/
     	 if (location.x + this.getWidth() > screen.x + screen.width) {
     		 location.x = screen.x + screen.width - this.getWidth();
             }
@@ -40,6 +40,7 @@ public TrayFrame() {
             	location.y = screen.y;
             }
             this.setLocation(location);
+            /*-----------*/
             getContentPane().setLayout(null);
             
             JScrollPane scrollPane = new JScrollPane();

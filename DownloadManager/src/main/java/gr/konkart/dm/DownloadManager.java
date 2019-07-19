@@ -1,6 +1,7 @@
 package gr.konkart.dm;
 
 import java.awt.AWTException;
+
 import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Image;
@@ -95,8 +96,9 @@ public class DownloadManager {
 	JMenuItem bmp;
 	JMenuItem png;
 	JTabbedPane tabbedPane;
+	int speedLimitNumber = 400;
 	ExecutorService pool = Executors.newCachedThreadPool();
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		System.setProperty("http.agent", "Chrome");
 		EventQueue.invokeLater(new Runnable() {
 			@SuppressWarnings("static-access")
@@ -255,7 +257,7 @@ public class DownloadManager {
 								// TODO Auto-generated catch block
 								e1.printStackTrace();
 							}
-						DownloadSpeedLimit(100);
+						DownloadSpeedLimit(speedLimitNumber);
 					}
 				/*--------------*/
 			}
@@ -308,7 +310,7 @@ public class DownloadManager {
 		 tglbtnNewToggleButton.addItemListener(new ItemListener() {
 			   public void itemStateChanged(ItemEvent ev) {
 			      if(ev.getStateChange()==ItemEvent.SELECTED){
-			    	DownloadSpeedLimit(100);
+			    	DownloadSpeedLimit(speedLimitNumber);
 			    	RateState=true;
 			        System.out.println("button is selected");
 			      } else if(ev.getStateChange()==ItemEvent.DESELECTED){
@@ -531,6 +533,7 @@ public class DownloadManager {
 				e1.printStackTrace();
 			}
 			progress = table_1.getModel().getValueAt(row, 2).toString();
+			String status = table_1.getModel().getValueAt(row, 3).toString();
 			String percentSplit[] = progress.split("%");
 			percent = percentSplit[0];
 			int per = Integer.parseInt(percent);
@@ -584,6 +587,20 @@ public class DownloadManager {
 				}
 				
 			}
+			else if (status=="Deleted" || status=="Failed"){
+				pause.setVisible(false);
+				resume.setText("Redownload");
+				sectionsMenu.setVisible(false);
+				open.setVisible(false);
+				delete.setVisible(false);
+			}
+			else {
+				pause.setVisible(true);
+				resume.setText("Resume");
+				sectionsMenu.setVisible(false);
+				open.setVisible(false);
+				delete.setVisible(false);
+			}
 	        }
 	        
 			
@@ -608,6 +625,7 @@ public class DownloadManager {
 							FileUtils de = new FileUtils();
 							de.delete(file);
 							table_1.getModel().setValueAt("Deleted",rowtoDelete, 3);
+							table_1.getModel().setValueAt("0% 0KB/s",rowtoDelete, 2);
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
@@ -825,7 +843,7 @@ public class DownloadManager {
 									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
-							DownloadSpeedLimit(100);
+							DownloadSpeedLimit(speedLimitNumber);
 						}
 					}
 					else {
@@ -851,6 +869,7 @@ public class DownloadManager {
 				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
 				  pool.execute(df[Integer.parseInt(value)]);
 				  pool.execute(dMonitor);
+				  System.out.println("started again redownloading");
 				  if(RateState==true) {
 					  try {
 							Thread.sleep(300);
@@ -858,7 +877,7 @@ public class DownloadManager {
 							// TODO Auto-generated catch block
 							s.printStackTrace();
 						}
-						DownloadSpeedLimit(100);
+						DownloadSpeedLimit(speedLimitNumber);
 					}
 				  //df[Integer.parseInt(value)].ResumeDownload();
 				  }
@@ -960,7 +979,7 @@ public class DownloadManager {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
-								DownloadSpeedLimit(100);
+								DownloadSpeedLimit(speedLimitNumber);
 							}
 					   }
 					   gui.updateStatus(currThread,false,typeof);
@@ -1071,7 +1090,7 @@ public class DownloadManager {
     								// TODO Auto-generated catch block
     								e1.printStackTrace();
     							}
-    						DownloadSpeedLimit(100);
+    						DownloadSpeedLimit(speedLimitNumber);
     					}
     				/*--------------*/
     			}else if(t=="Torrent"){

@@ -9,7 +9,7 @@ public class URLHandler {
 	public URLHandler() {
 	URLHandler.cont = "ERROR";
 	}
-	public static String gContentTypeA(String a) throws IOException {
+	public static String gContentTypeA(String a) throws IOException {//gets the type name of file
 		
 		URL newurl = new URL(a);
 		URLConnection con = newurl.openConnection();
@@ -19,7 +19,7 @@ public class URLHandler {
 		String content = contentA[1];
 		return content;
 	}
-	public static String isUrl(String u) {
+	public static String isUrl(String u) {//figures if a URI is a URL or a magnet link
 		String isit = null;
 		final String URL_REGEX = "^((https?|ftp)://|(www|ftp)\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)+([/?].*)?$";
 		final String MAGNET_REGEX= "^magnet:\\?xt=urn:btih:[a-zA-Z0-9]*.*";
@@ -33,7 +33,7 @@ public class URLHandler {
 		else if (mag.find()){isit="Torrent";}
 		return isit;
 	}
-	public static String getFilename(String pathfilename) {
+	public static String getFilename(String pathfilename) {//gets the filename from the link(url)
 		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf('\\'));
 			if (p >= 0) {
 				return pathfilename.substring(p + 1);

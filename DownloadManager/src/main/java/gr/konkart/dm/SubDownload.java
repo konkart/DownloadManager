@@ -84,8 +84,8 @@ public void run(){
 		            	
 		            	BytesDownloaded += bytesRead;
 		            	BytesDownloadedP += bytesRead;
-		            	if (r!=0 && Counter>r) {
-		            	inc = (int) (r*10);
+		            	if (r!=0 && Counter>(r*1000)) {
+		            	inc = (int) (r*10/(r/100));
 		            	Counter=0;
 		            	Thread.sleep(inc);
 		            	}
