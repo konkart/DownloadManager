@@ -36,8 +36,6 @@ public class DownloadFile implements Runnable{
 			FileSize = uc.getContentLength();
 			FilePath = url.getPath();
 			IsPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
-			
-			//System.out.println("Filesize: " + FileSize);
 			}catch(Exception e){}
 		};
 public String getBytesDownloaded(){
@@ -92,7 +90,6 @@ public int StartDownload() throws IOException{
 						partname = "DFL" +  String.valueOf(DownloadID) + String.valueOf(li_conn) + ".dat";//part name and temporary extension
 						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);//Subdownload creation
 						StartTime=System.currentTimeMillis();
-						
 						pool.execute(sd[li_conn]);//Subdownload start
 						//sd[li_conn].start();
 						
@@ -114,6 +111,7 @@ public int StartDownload() throws IOException{
 					String nameofFile = nameof[nameof.length-1]+"dat";
 					sd[0] = new SubDownload(nameofFile,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);
 					StartTime=System.currentTimeMillis();
+					sd[0].setIsNotPartial();
 					pool.execute(sd[0]);
 					//sd[0].start();
 					ActiveSubConn = ActiveSubConn + 1;
@@ -169,11 +167,6 @@ public  boolean getPause() {//Checks if paused
 	}
 	return p;
 	
-}
-public void ResumeDownload() {//Resumes the Sub Downloads
-	for (int i=0;i<sd.length;i++) {
-		sd[i].setResume();
-	}
 }
 		
 public void run(){

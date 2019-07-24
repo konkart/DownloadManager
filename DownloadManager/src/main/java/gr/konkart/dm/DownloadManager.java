@@ -45,6 +45,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JButton;
 import javax.swing.JTable;
 import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.JTabbedPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -119,7 +120,9 @@ public class DownloadManager {
 		      
 		      MenuItem exitItem = new MenuItem("Exit");
 		      MenuItem openmain = new MenuItem("Open");
-		      popup.add(openmain);
+		      popup.add(openmain).addActionListener(e-> {
+		    	  frame.setVisible(true);
+		      });
 		      popup.add(exitItem).addActionListener(e-> {
 		    	  frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
 		    	  System.exit(0);
@@ -128,9 +131,7 @@ public class DownloadManager {
 		      trayIcon.setImageAutoSize(true);
 		      trayIcon.addActionListener(new ActionListener() {
 		        public void actionPerformed(ActionEvent e) {
-		          System.out.println("In here");
 		          frame.setVisible(true);
-		          //trayIcon.displayMessage("Tester!", "Some action performed", TrayIcon.MessageType.INFO);
 		        }
 		      });
 		      trayIcon.addMouseListener(new MouseAdapter() {
@@ -140,8 +141,9 @@ public class DownloadManager {
 		    	        if ( (modifiers & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK) {
 		    	        	if (e.getClickCount() == 1) {
 		    	        	
-		    	        			
+		    	        		trayframe.setToBottomRight();
 		    	        		trayframe.setVisible(true);
+		    	        		
 		    	        	
 		    	        	}
 		    	        }
@@ -831,11 +833,8 @@ public class DownloadManager {
 						
 						int row = table_1.getSelectedRow();
 	    				String value = table_1.getModel().getValueAt(row, column).toString();
-	    				System.out.println(value);
-	    				System.out.println(df[Integer.parseInt(value)]);
 	    				//pool.shutdownNow();
 	    				df[Integer.parseInt(value)].PauseDownload();
-	    				System.out.println(df.length);
 	    				if(RateState==true) {
 							 try {
 									Thread.sleep(300);
@@ -879,7 +878,6 @@ public class DownloadManager {
 						}
 						DownloadSpeedLimit(speedLimitNumber);
 					}
-				  //df[Integer.parseInt(value)].ResumeDownload();
 				  }
 				  else if(type=="Torrent"){
 					  int row = table_2.getSelectedRow();

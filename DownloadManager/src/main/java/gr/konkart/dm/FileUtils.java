@@ -15,7 +15,7 @@ public class FileUtils{
 	InputStream in = null;
 	int concatcomplete=0;
 	RandomAccessFile raf;
-	public void concat(String args[],String au) throws IOException{
+	public void concat(String args[],String au) throws IOException{//concatenates the temporary files in order to create the final wanted file
 	String[] getname = au.split("/");
 	String outfile=URLHandler.getFilename(getname[getname.length-1]);
 	File f = new File(outfile);
@@ -44,31 +44,29 @@ public class FileUtils{
 
 
  	
-  	public void delete(String filename) throws IOException {
+  	public void delete(String filename) throws IOException {//deletes the file
   	String name=URLHandler.getFilename(filename);
     File f = new File(home+"\\Downloads\\"+name);
     f.delete();
   	}
   	
-  	public void imgConv(String n , String t) {
+  	public void imgConv(String n , String t) {//image conversion method by creating a buffered image and writing on it
   		BufferedImage bufferedImage;
   		File inputFile = new File(n);
   		String split[] = n.split("\\.");
   		String keepName = split[0]; 
-  		File outputFile = new File(keepName+"."+t);
+  		File outputFile = new File(keepName+"."+t);//t variable is the extension type that was chose on context menu
 
   		try (InputStream is = new FileInputStream(inputFile)){
 			
-  		  //read image file
+  		 
   			bufferedImage = ImageIO.read(is);
-	  		try (OutputStream os = new FileOutputStream(outputFile)){
-	  		  // create a blank, RGB, same width and height, and a white background
+	  		try (OutputStream os = new FileOutputStream(outputFile)){ // create a blank, RGB, same width and height, and a white background
+	  		 
 	  		  BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
 	  				bufferedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
 	  		  newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, Color.WHITE, null);
-	
-	  		  // write to jpeg file
-	  		  ImageIO.write(newBufferedImage, t, os);
+	  		  ImageIO.write(newBufferedImage, t, os);//write our image with the new extension (t)
 	
 	  		  System.out.println("Done");
 	  				
@@ -84,7 +82,7 @@ public class FileUtils{
 		}
   	}
   	//was audio
-  	public void videoConv(String n , String t) {
+  	public void videoConv(String n , String t) {//video conversion using ffmpeg
   		//File ffmpeg = new File("ffmpeg.exe");
   		String keepName[] = n.split("\\.");
   		pause();
@@ -95,7 +93,7 @@ public class FileUtils{
   		String nameOfFile = keepName[0];
   		File outputFile = new File(keepName+"."+t);
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -i "+n+" -crf 14 -speed fast -threads 4 "+nameOfFile+"."+t};
-  		Runnable task = () -> {
+  		Runnable task = () -> {//executes cmd command and reads the output
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);
@@ -134,7 +132,7 @@ public class FileUtils{
   		String nameOfFile = keepName[0];
   		File outputFile = new File(keepName+"."+t);
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
-  		Runnable task = () -> {
+  		Runnable task = () -> {//executes cmd command and reads the output
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);

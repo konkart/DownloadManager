@@ -15,31 +15,15 @@ public class TrayFrame extends JFrame {
 private static final long serialVersionUID = 1L;
 JTable table;
 protected DefaultTableModel modelTray;
-
+Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
 public TrayFrame() {
 		setType(Type.UTILITY);
 		setResizable(false);
 		setAlwaysOnTop(true);
 		setDefaultCloseOperation(JFrame.ICONIFIED);
 		setBounds(100, 100, 340, 240);
-		Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
-    	        .getMaximumWindowBounds();
-    	Point location = MouseInfo.getPointerInfo().getLocation();
-    	/* screen position check to always place tray window on bottom right*/
-    	 if (location.x + this.getWidth() > screen.x + screen.width) {
-    		 location.x = screen.x + screen.width - this.getWidth();
-            }
-            if (location.x < screen.x) {
-            	location.x = screen.x;
-            }
-
-            if (location.y + this.getHeight() > screen.y + screen.height) {
-            	location.y = screen.y + screen.height - this.getHeight();
-            }
-            if (location.y < screen.y) {
-            	location.y = screen.y;
-            }
-            this.setLocation(location);
+		
+    	
             /*-----------*/
             getContentPane().setLayout(null);
             
@@ -63,6 +47,7 @@ public TrayFrame() {
             
             scrollPane.setViewportView(table);
             setVisible(true);
+            setToBottomRight();
             
 	}
 	public void addR(Object object) {
@@ -70,5 +55,23 @@ public TrayFrame() {
 		
 	}
 	public void setValueAt(String string, int currThread, int i) {
+	}
+	public void setToBottomRight() {
+	Point location = MouseInfo.getPointerInfo().getLocation();
+	/* screen position check to always place tray window on bottom right*/
+	 if (location.x + this.getWidth() > screen.x + screen.width) {
+		 location.x = screen.x + screen.width - this.getWidth();
+        }
+        if (location.x < screen.x) {
+        	location.x = screen.x;
+        }
+
+        if (location.y + this.getHeight() > screen.y + screen.height) {
+        	location.y = screen.y + screen.height - this.getHeight();
+        }
+        if (location.y < screen.y) {
+        	location.y = screen.y;
+        }
+        this.setLocation(location);
 	}
 }

@@ -1,26 +1,19 @@
 package gr.konkart.dm;
 
 import java.io.File;
-import java.security.Security;
 import java.text.NumberFormat;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
 import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTModule;
-import bt.peerexchange.PeerExchangeModule;
 import bt.protocol.crypto.EncryptionPolicy;
-
 import java.nio.file.*;
 import bt.dht.*;
 import bt.runtime.BtClient;
 import bt.runtime.Config;
 import bt.torrent.selector.PieceSelector;
 import bt.torrent.selector.SequentialSelector;
-import bt.tracker.http.HttpTrackerModule;
 
 
 
@@ -46,20 +39,22 @@ public class Torrent implements Runnable{
 	public void run() {
 			String home = System.getProperty("user.home");
 			System.setProperty("java.net.preferIPv4Stack" , "true");
-			
-		Config config = new Config() {//torrent client config
+		
+		//torrent client config	
+		Config config = new Config() {
+			//number of threads to use
 		    @Override
-		    public int getNumOfHashingThreads() {//number of threads to use
+		    public int getNumOfHashingThreads() {
 		        return Runtime.getRuntime().availableProcessors() * 4;
 		    }
 		};
 		Duration dur = Duration.ofSeconds(60);
 		config.setPeerConnectionTimeout(dur);
-		config.setPeerConnectionRetryCount(1);//peer connection retry count
+		config.setPeerConnectionRetryCount(1);
 		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
 		config.setEncryptionPolicy(EncryptionPolicy.REQUIRE_ENCRYPTED);
-		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));//Peer ban duration after failing to connect
-		config.setMaxPeerConnections(100);//max active peer connections
+		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));
+		config.setMaxPeerConnections(100);
 		config.setNumberOfPeersToRequestFromTracker(30);
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
 		    @Override
@@ -74,6 +69,7 @@ public class Torrent implements Runnable{
 		// create file system based backend for torrent data
 		Storage storage = new FileSystemStorage(targetDirectory);
 		PieceSelector selector= SequentialSelector.sequential();
+		
 		// create client with a private runtime
 		BtClient client = Bt.client()
 		        .config(config)
@@ -85,24 +81,29 @@ public class Torrent implements Runnable{
 		        .selector(selector)
 		        .build();
 		StartTime = System.currentTimeMillis();
-		client.startAsync(state -> {//start client with callback every 1000ms
+		//start client with callback every 1000ms
+		client.startAsync(state -> {
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
 			perce = (piece*100)/(total);
-		    if (state.getPiecesRemaining() == 0) {//if no pieces remaining stop client and flag as completed
+			//if no pieces remaining stop client and flag as completed
+		    if (state.getPiecesRemaining() == 0) {
 		        client.stop();
 		        Complete = 1;
 		    }
 		    else if(Paused==true) {
 		    	client.stop();
 		    }
-		    downloaded=state.getDownloaded();//get downloaded bytes
+		  //get downloaded bytes
+		    downloaded=state.getDownloaded();
 		}, 1000).join();
 		}
-	public long getDownloaded() {//get downloaded data in Megabytes
+	//get downloaded data in Megabytes
+	public long getDownloaded() {
 		return (downloaded/1024)/1024;
 	}
-	public String getDownloadSpeed() {//download speed calculation
+	//download speed calculation
+	public String getDownloadSpeed() {
 		float current_speed;
 		downloadedS=downloaded;
 		if (downloadedS > 0 ) {
