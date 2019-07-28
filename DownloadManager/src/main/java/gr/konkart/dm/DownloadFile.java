@@ -21,7 +21,7 @@ public class DownloadFile implements Runnable{
 	public boolean IsPartial;		//Flag to check if webhost supports partial(multipart) download
 	public volatile boolean Paused = false;	//Paused Flag
 	int r=0;
-	volatile float R=0;
+	volatile double R=0;
 	public URL url;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public DownloadFile(int aDownloadID,String aFileLoc,int aTotConnections,int aBufferSize){
@@ -88,7 +88,7 @@ public int StartDownload() throws IOException{
 							ld_FEndPos= ld_FStartPos + ld_partsize - 1;
 						}
 						partname = "DFL" +  String.valueOf(DownloadID) + String.valueOf(li_conn) + ".dat";//part name and temporary extension
-						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);//Subdownload creation
+						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize/5,DownloadID);//Subdownload creation
 						StartTime=System.currentTimeMillis();
 						pool.execute(sd[li_conn]);//Subdownload start
 						//sd[li_conn].start();
@@ -137,7 +137,7 @@ public String getSubDownId(int id){//Get Sub download ID
 public void calcBytesDownloaded(){//Downloaded bytes calculation
 				BytesDownloaded=0;	
 				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
-					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloadedP;
+					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloaded;
 					}
 			}
 public  synchronized void OneSubIsCompleted() {//Updates the speed limit on all active subdownloads when one is completed
@@ -146,9 +146,9 @@ public  synchronized void OneSubIsCompleted() {//Updates the speed limit on all 
 	setRateLimit(R);
 	}
 }
-public void setRateLimit(float x) {//Rate Limit per Sub Download
-				R = x;
-				float r = x/TotConnections;
+public void setRateLimit(double rateper) {//Rate Limit per Sub Download
+				R = rateper;
+				double r = rateper/TotConnections;
 				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
 					sd[li_conn].RateLimit(r);
 					

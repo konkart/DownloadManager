@@ -1,7 +1,7 @@
 package gr.konkart.dm;
 
 import java.awt.AWTException;
-
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Image;
@@ -45,7 +45,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JButton;
 import javax.swing.JTable;
 import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
+import javax.swing.plaf.basic.BasicSpinnerUI;
 import javax.swing.JTabbedPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -60,8 +60,8 @@ public class DownloadManager {
 	static ClassLoader classLoader = DownloadManager.class.getClassLoader();
 	static String path  = classLoader.getResource("NekoAtsumeFace.png").getPath();
 	static Image image = Toolkit.getDefaultToolkit().getImage(path);
-	public int DownloadID = 0;
-	public int TorrentID = 0;
+	public static int DownloadID = 0;
+	public static int TorrentID = 0;
 	static TrayIcon trayIcon = new TrayIcon(image, "Tester2");
 	static JFrame frame;
 	public DownloadFile df[] = new  DownloadFile[0];
@@ -75,7 +75,7 @@ public class DownloadManager {
 	private DefaultTableModel model;
 	private DefaultTableModel model2;
 	public int li_TotalConnections = 5;
-	public int li_BufferLen = 4;
+	public int li_BufferLen = 2024;
 	public boolean RateState=false;
 	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
@@ -97,7 +97,7 @@ public class DownloadManager {
 	JMenuItem bmp;
 	JMenuItem png;
 	JTabbedPane tabbedPane;
-	int speedLimitNumber = 400;
+	double speedLimitNumber=0;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) throws IOException {
 		System.setProperty("http.agent", "Chrome");
@@ -105,6 +105,7 @@ public class DownloadManager {
 			@SuppressWarnings("static-access")
 			public void run() {
 				try {
+					
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					window = new DownloadManager();
 					window.frame.setVisible(true);
@@ -156,6 +157,7 @@ public class DownloadManager {
 		        System.err.println("TrayIcon could not be added.");
 		      }
 		    }
+		
 		
 	}
 	
@@ -225,12 +227,13 @@ public class DownloadManager {
 
 				return;
 			}
-			
+			btnDownload.setEnabled(false);
 			String type;
 			if(URLHandler.isUrl(textField.getText())=="URL") {
 				type = "URL";
 				System.out.println("it is a URL");
 				ls_FileLoc = textField.getText();
+				textField.setText("");
 				try {
 					String ext = URLHandler.gContentTypeA(ls_FileLoc);
 					System.out.println(ext);
@@ -251,7 +254,7 @@ public class DownloadManager {
 					pool.execute(df[DownloadID]);
 					pool.execute(dMonitor);
 					DownloadID = DownloadID + 1;
-					textField.setText("");
+					System.out.println(df.length);
 					if(RateState==true) {
 						 try {
 								Thread.sleep(300);
@@ -266,6 +269,7 @@ public class DownloadManager {
 			else if (URLHandler.isUrl(textField.getText())=="Torrent") {
 				type="Torrent";
 				ls_FileLoc = textField.getText();
+				textField.setText("");
 				String[] magnetParts = ls_FileLoc.split("&"); 
 				String toName = magnetParts[1];
 				String[] Split_toEq = toName.split("=");
@@ -289,29 +293,37 @@ public class DownloadManager {
 				pool.execute(tr[TorrentID]);
 				pool.execute(dMonitor);
 				TorrentID=TorrentID+1;
-				textField.setText("");
+				
 			}
 			else {
 				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			
-			
-			
-			
-			
-		    
-				
+			btnDownload.setEnabled(true);	
 		  }
 		});
 		
 		/*---------------------*/
-		
+		JSpinner amoun = new JSpinner();
+		amoun.setModel(new SpinnerNumberModel(new Double(0), new Double(0), null, new Double(1)));
+		amoun.setBounds(319, 1, 55, 20);
+		amoun.setUI(new BasicSpinnerUI() {
+            protected Component createNextButton() {
+                return null;
+            }
+
+            protected Component createPreviousButton() {
+                return null;
+            }
+        });
+		panel.add(amoun);
 		
 		JToggleButton tglbtnNewToggleButton = new JToggleButton("Speed Limit");
 		 tglbtnNewToggleButton.addItemListener(new ItemListener() {
 			   public void itemStateChanged(ItemEvent ev) {
 			      if(ev.getStateChange()==ItemEvent.SELECTED){
+			    	speedLimitNumber = (double) amoun.getValue();
+			    	speedLimitNumber = Math.round(1000*speedLimitNumber);
 			    	DownloadSpeedLimit(speedLimitNumber);
 			    	RateState=true;
 			        System.out.println("button is selected");
@@ -324,6 +336,8 @@ public class DownloadManager {
 			});
 		tglbtnNewToggleButton.setBounds(384, 0, 94, 23);
 		panel.add(tglbtnNewToggleButton);
+		
+		
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
 		tabbedPane.addTab("Torrents", null, scrollPane_1, null);
@@ -538,7 +552,12 @@ public class DownloadManager {
 			String status = table_1.getModel().getValueAt(row, 3).toString();
 			String percentSplit[] = progress.split("%");
 			percent = percentSplit[0];
-			int per = Integer.parseInt(percent);
+			int per;
+			try {
+				per = Integer.parseInt(percent);
+			}catch(Exception error) {
+				per=0;
+			}
 			if (per==100 ){
 				pause.setVisible(false);
 				resume.setText("Redownload");
@@ -1060,9 +1079,9 @@ public class DownloadManager {
         
     	}
 	//RATELIMIT
-	public void DownloadSpeedLimit(int s) {
+	public void DownloadSpeedLimit(double speedLimitNumber2) {
 		if(df.length!=0) {
-		float rateper = s/df.length;
+		double rateper = speedLimitNumber2/df.length;
 		for (int i=0;i<df.length;i++) {
 			df[i].setRateLimit(rateper);
 			}

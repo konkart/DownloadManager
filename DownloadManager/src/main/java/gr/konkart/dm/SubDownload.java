@@ -14,28 +14,25 @@ public class SubDownload implements Runnable{
 	public  long FileStartPos;
 	public  long FileEndPos;
 	public  long BytesDownloaded;
-	public 	long BytesDownloadedP;
 	public  byte Buffer[];
 	public  byte NewBufferminus[];
 	public  byte NewBufferplus[];
 	public  int Complete=0;
 	int DownloadID;
-	public volatile float r = 0;
+	public volatile double r = 0;
 	boolean Aborted = false;
 	int inc = 50;
 	private volatile boolean Paused = false;
 	FileOutputStream outputStream = null;
 	private boolean isNotPartial=false;
-	float Counter=0;
 	String home = System.getProperty("user.home");
 public SubDownload(String aSubDownloadId,String aFileLoc,long aFileStartPos,long aFileEndPos,int aBufferSize,int aDownloadID){
 
 		FileLoc=aFileLoc;//URL to file
 		FileStartPos=aFileStartPos;//start byte of the "to-download" range
 		FileEndPos=aFileEndPos;//end byte of the range
-		Buffer = new byte[1024*aBufferSize];	
+		Buffer = new byte[aBufferSize];	
 		BytesDownloaded=0;
-		BytesDownloadedP=0;
 		SubDownloadId=aSubDownloadId;//the temp file name
 		DownloadID=aDownloadID;
 		Complete=0;
@@ -59,7 +56,7 @@ public void run(){
 			if (f.exists()) {
 				/*if a non-partial download has been previously stopped, it will instead start over when it is to be resumed*/
 				if(isNotPartial==false) {
-					BytesDownloadedP = f.length();
+					BytesDownloaded = f.length();
 					FileStartPos=FileStartPos+f.length();
 					
 					//check to avoid error:416 on requesting property
@@ -83,10 +80,13 @@ public void run(){
 				uc.setRequestProperty("Range","bytes=" + FileStartPos + "-"+ FileEndPos);
 				outputStream = new FileOutputStream(f);
 				}
-			System.out.println(FileStartPos+"  :  "+FileEndPos);
 			//gets the bytes stream
 			InputStream inputStream =  uc.getInputStream();
+			Long ltest = 1000L;
 			byte[] buffer = Buffer;
+			Long oldtime =System.currentTimeMillis();
+			long now;
+			long downed = 0L;
 			if(FileStartPos<=FileEndPos) {
 			while(BytesDownloaded < (FileEndPos - FileStartPos) && Paused==false)
 			{
@@ -94,22 +94,18 @@ public void run(){
 				
 					
 				while (Paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
-						
-						Counter+=bytesRead;
 		            	outputStream.write(buffer, 0, bytesRead);
-		            
-		            	
 		            	BytesDownloaded += bytesRead;
-		            	BytesDownloadedP += bytesRead;
 		            	
 		            	//speed rate check and limit
-		            	if (r!=0 && Counter>(r*1000)) {
-		            	inc = (int) (r*10/(r/100));
-		            	Counter=0;
-		            	Thread.sleep(inc);
+		            	if (r!=0 && downed>(r*1000) && ((now=System.currentTimeMillis())-oldtime)<ltest) {
+		            	Thread.sleep(ltest-(now-oldtime));
+		            	oldtime=System.currentTimeMillis();
+		            	downed=0;
 		            	}
-
-		        	
+		            	if(bytesRead>=0) {
+		            		downed=(long) (downed+bytesRead);
+		            	}
 					} 
 				
 				
@@ -125,7 +121,16 @@ public void run(){
 
 
 		}catch(Exception e){
-			System.out.println(e);
+			try {
+				outputStream.close();
+				Paused=true;
+				Complete=1;
+				System.out.println("IsCLosed");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				
+			}
+	        
 		}
 			
 
@@ -138,11 +143,12 @@ public void run(){
 	public synchronized boolean getPause() {
 		return Paused;
 	}
-	public void RateLimit(float x) {
-		this.r = x;
+	public void RateLimit(double r2) {
+		this.r = r2;
 		
 	}
 	public void setIsNotPartial() {
 		isNotPartial=true;
 	}
+	
 }
