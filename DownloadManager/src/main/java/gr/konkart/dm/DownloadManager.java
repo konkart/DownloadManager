@@ -98,6 +98,7 @@ public class DownloadManager {
 	JMenuItem png;
 	JTabbedPane tabbedPane;
 	double speedLimitNumber=0;
+	int active=0;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) throws IOException {
 		System.setProperty("http.agent", "Chrome");
@@ -254,6 +255,7 @@ public class DownloadManager {
 					pool.execute(df[DownloadID]);
 					pool.execute(dMonitor);
 					DownloadID = DownloadID + 1;
+					active=active+1;
 					System.out.println(df.length);
 					if(RateState==true) {
 						 try {
@@ -888,6 +890,7 @@ public class DownloadManager {
 				  pool.execute(df[Integer.parseInt(value)]);
 				  pool.execute(dMonitor);
 				  System.out.println("started again redownloading");
+				  active=active+1;
 				  if(RateState==true) {
 					  try {
 							Thread.sleep(300);
@@ -975,6 +978,16 @@ public class DownloadManager {
 					   if(!gui.df[currThread].getPause()) {
 						   try {
 							   futils.concat(files,gui.df[currThread].FilePath);
+							   active=active-1;
+								if(RateState==true) {
+									   try {
+										Thread.sleep(300);
+									} catch (InterruptedException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+										DownloadSpeedLimit(speedLimitNumber);
+									}
 								} catch (IOException e) {
 										e.printStackTrace();
 								}
@@ -989,6 +1002,7 @@ public class DownloadManager {
 		   					}
 					   else {
 						   gui.df[currThread].Complete = 1;
+						   active=active-1;
 						   if(RateState==true) {
 							   try {
 								Thread.sleep(300);
@@ -1080,10 +1094,12 @@ public class DownloadManager {
     	}
 	//RATELIMIT
 	public void DownloadSpeedLimit(double speedLimitNumber2) {
-		if(df.length!=0) {
-		double rateper = speedLimitNumber2/df.length;
+		if(df.length!=0 && active!=0) {
+		double rateper = speedLimitNumber2/active;
 		for (int i=0;i<df.length;i++) {
+			if(df[i].Complete==0) {
 			df[i].setRateLimit(rateper);
+			}
 			}
 		}
 	}
@@ -1097,6 +1113,7 @@ public class DownloadManager {
             	
     			
     			if (t=="URL") {
+    					active=active+1;
     					pool.execute(df[ID]);
     					pool.execute(d);
     					
