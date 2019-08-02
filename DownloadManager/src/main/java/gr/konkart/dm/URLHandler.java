@@ -38,9 +38,17 @@ public class URLHandler {
 	}
 	//gets the filename from the link(url)
 	public static String getFilename(String pathfilename) {
-		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf('\\'));
+		String nameOfTheFile=pathfilename;
+		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf("\\"));
+		if(pathfilename.substring(p + 1).contains("?")) {
+			String parts[]=pathfilename.substring(p + 1).split("\\?");
+			nameOfTheFile=parts[0];
+		}
+		else {
+			nameOfTheFile=pathfilename.substring(p + 1);
+		}
 			if (p >= 0) {
-				return pathfilename.substring(p + 1);
+				return nameOfTheFile;
 			} 
 			else {
 				return pathfilename;
