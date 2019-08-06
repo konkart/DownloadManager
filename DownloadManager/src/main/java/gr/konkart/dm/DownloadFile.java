@@ -7,176 +7,189 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DownloadFile implements Runnable{
-	public String FileLoc;     		//File URL 
+	public String fileLoc;     		//File URL 
 	public String FilePath;
-	public long FileSize;	 	    //File Size
-	public long BytesDownloaded;   //Bytes Downloaded
-	public int TotConnections;       //Total Connections
-	public int BufferSize;			//Buffer Size
+	public long fileSize;	 	    //File Size
+	public long bytesDownloaded;	//Bytes Downloaded
+	public int totConnections;		//Total Connections
+	public int bufferSize;			//Buffer Size
 	public SubDownload sd[];		//Subdownloads array
-	public int DownloadID;
-	public int Complete;			//Completion flag
-	public int ActiveSubConn;		//Active SubConnections(Subdownloads)counter
-	public long StartTime;
-	public boolean IsPartial;		//Flag to check if webhost supports partial(multipart) download
-	public volatile boolean Paused = false;	//Paused Flag
+	public int downloadID;
+	public int complete;			//Completion flag
+	public int activeSubConn;		//Active SubConnections(Subdownloads)counter
+	public long startTime;
+	public boolean isPartial;		//Flag to check if webhost supports partial(multipart) download
 	int r=0;
 	volatile double R=0;
 	public URL url;
 	ExecutorService pool = Executors.newCachedThreadPool();
-	public DownloadFile(int aDownloadID,String aFileLoc,int aTotConnections,int aBufferSize){
-		FileLoc = aFileLoc;
-		TotConnections = aTotConnections;
-		BufferSize = aBufferSize;
-		DownloadID= aDownloadID;
-		ActiveSubConn=0;
+	public DownloadFile(int DownloadID,String FileLoc,int TotConnections,int BufferSize){
+		this.fileLoc = FileLoc;
+		this.totConnections = TotConnections;
+		this.bufferSize = BufferSize;
+		this.downloadID= DownloadID;
+		activeSubConn=0;
 			try{
-			url = new URL(aFileLoc);
+			url = new URL(this.fileLoc);
 			URLConnection uc = url.openConnection();
-			FileSize = uc.getContentLength();
+			fileSize = uc.getContentLength();
 			FilePath = url.getPath();
-			IsPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
+			isPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
 			}catch(Exception e){}
 		};
-public String getBytesDownloaded(){
-		return String.valueOf((BytesDownloaded/1024)/1024);}
+		public String getBytesDownloaded(){
+			return String.valueOf((bytesDownloaded/1024)/1024);
+		}
 		
-public String getFileSize(){
-		return String.valueOf(FileSize);}
-		
-public String numberofConnections(){
-		return String.valueOf(ActiveSubConn);}
-		
-public String getDownloadSpeed(){ 
+		public String getFileSize(){
+			return String.valueOf(fileSize);
+		}
+		//calculates and returns the download speed
+		public String getDownloadSpeed(){ 
 
 			float current_speed;
 
-			if (BytesDownloaded > 0 ) {
-			current_speed = (float)( BytesDownloaded / (System.currentTimeMillis() - StartTime));
+			if (bytesDownloaded > 0 ) {
+			current_speed = (float)( bytesDownloaded / (System.currentTimeMillis() - startTime));
 			}
 			else {
 			current_speed = 0;
 			}
-			NumberFormat formatter = NumberFormat.getNumberInstance() ;
+			
+			NumberFormat formatter = NumberFormat.getNumberInstance();
 			formatter.setMaximumFractionDigits(2);
-
-			return " " + formatter.format(current_speed) + " KB/s ";
+			if (current_speed>1000) {
+				current_speed=current_speed/1000;
+				return " "+formatter.format(current_speed)+" MB/s ";
+			}
+			else {
+				return " "+formatter.format(current_speed)+" KB/s ";
+			}
 			
 		}
 
 		
-public int StartDownload() throws IOException{ 
-			int li_conn=0;//liveConnections
-			long ld_FStartPos,ld_FEndPos,ld_partsize;
+		public void StartDownload() throws IOException{ 
+			int conn=0;//liveConnections
+			long fStartPos,fEndPos,partsize;
 			String partname;
-			Complete=0;
+			complete=0;
+			String nameofFile = URLHandler.getFilename(fileLoc);
 			//Download initialization
-			if (IsPartial==true) {
-				//Multipart Download initialization
-			sd = new SubDownload[TotConnections];
-			ld_partsize= (long)(FileSize/TotConnections);//Dividing the file size to get size for each sub part
-			
-			//Part initialization
-			for (li_conn=0;li_conn < TotConnections ;li_conn++){
+			if (isPartial==true) {
+			//Multipart Download initialization
+			sd = new SubDownload[totConnections];
+			//Dividing the file size to get size for each sub part
+			partsize= (long)(fileSize/totConnections);
 
-						if ( li_conn == (TotConnections - 1)) {//Last part initialization
-							ld_FStartPos=li_conn*ld_partsize;
-							ld_FEndPos= FileSize;
+			//Part initialization
+			for (conn=0;conn<totConnections;conn++){
+				
+						//Last part initialization
+						if ( conn == (totConnections - 1)) {
+							fStartPos=conn*partsize;
+							fEndPos= fileSize;
 						}
-						else {//Parts initialization
-							ld_FStartPos=li_conn*ld_partsize;
-							ld_FEndPos= ld_FStartPos + ld_partsize - 1;
+						//Parts initialization
+						else {
+							fStartPos=conn*partsize;
+							fEndPos= fStartPos + partsize - 1;
 						}
-						partname = "DFL" +  String.valueOf(DownloadID) + String.valueOf(li_conn) + ".dat";//part name and temporary extension
-						sd[li_conn] = new SubDownload(partname,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize/5,DownloadID);//Subdownload creation
-						StartTime=System.currentTimeMillis();
-						pool.execute(sd[li_conn]);//Subdownload start
-						//sd[li_conn].start();
-						
-						ActiveSubConn = ActiveSubConn + 1;
+						//part name and temporary extension
+						partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
+						//Subdownload creation
+						sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID);
+						startTime=System.currentTimeMillis();
+						pool.execute(sd[conn]);
+						activeSubConn = activeSubConn + 1;
 					}
 
 				
 				}
 				else {
 					//Single part download initialization
-					TotConnections = 1;
-					sd = new SubDownload[TotConnections];
+					totConnections = 1;
+					sd = new SubDownload[totConnections];
 					
-					li_conn=1;
-					ld_partsize= FileSize;
-					ld_FStartPos = 0;
-					ld_FEndPos= FileSize;
-					String[] nameof = FileLoc.split("/");
-					String nameofFile = nameof[nameof.length-1]+"dat";
-					sd[0] = new SubDownload(nameofFile,FileLoc,ld_FStartPos,ld_FEndPos,BufferSize,DownloadID);
-					StartTime=System.currentTimeMillis();
+					conn=0;
+					partsize= fileSize;
+					fStartPos = 0;
+					fEndPos= fileSize;
+					partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
+					sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID);
+					startTime=System.currentTimeMillis();
 					sd[0].setIsNotPartial();
 					pool.execute(sd[0]);
-					//sd[0].start();
-					ActiveSubConn = ActiveSubConn + 1;
+					activeSubConn = activeSubConn + 1;
 				}
-			return li_conn;
 			
-			}
-public int isSubDownComplete(int id){//Check if a subdownload is completed
-				return sd[id].Complete;
-			}
-public int DownloadProgress(){//Download progress calc
+		}
+		//check if a subdownload is completed
+		public int isSubDownComplete(int id){
+				return sd[id].complete;
+		}
+		//download progress calc
+		public int DownloadProgress(){
 				int pcount=0;
 				calcBytesDownloaded();
-				if ( BytesDownloaded > 0 && FileSize > 0 )
-				pcount = (int)((( BytesDownloaded * 100 ) / FileSize)) ;
+				if ( bytesDownloaded > 0 && fileSize > 0 )
+				pcount = (int)((( bytesDownloaded * 100 ) / fileSize)) ;
 				return pcount;
-			}
-			
-public String getSubDownId(int id){//Get Sub download ID
-				return sd[id].SubDownloadId;
-			}
-			
-public void calcBytesDownloaded(){//Downloaded bytes calculation
-				BytesDownloaded=0;	
-				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
-					BytesDownloaded=BytesDownloaded + sd[li_conn].BytesDownloaded;
-					}
-			}
-public  synchronized void OneSubIsCompleted() {//Updates the speed limit on all active subdownloads when one is completed
-	TotConnections =- 1;
-	if (TotConnections!=0) {
-	setRateLimit(R);
-	}
-}
-public void setRateLimit(double rateper) {//Rate Limit per Sub Download
-				R = rateper;
-				double r = rateper/TotConnections;
-				for (int li_conn=0;li_conn < TotConnections  ;li_conn++){
-					sd[li_conn].RateLimit(r);
-					
-				}	
-			}
-
-public void PauseDownload() {//Paused Sub Downloads
-	for (int i=0;i<sd.length;i++) {
-		sd[i].setPause();
-	}
-}
-public  boolean getPause() {//Checks if paused
-	boolean p = false;
-	for (int i=0;i<sd.length;i++) {
-		p = sd[i].getPause();
-	}
-	return p;
-	
-}
+		}
 		
-public void run(){
-				if ( FileSize > 0 )
-					try {
+		//get Sub download ID
+		public String getSubDownId(int id){
+			return sd[id].subDownloadId;
+		}
+		
+		//downloaded bytes calculation
+		public void calcBytesDownloaded(){
+			bytesDownloaded=0;	
+				for (int conn=0;conn<totConnections;conn++){
+					bytesDownloaded=bytesDownloaded + sd[conn].bytesDownloaded;
+				}
+		}
+		//method to update the speed limit on all active subdownloads when one is completed
+		public synchronized void OneSubIsCompleted() {
+			totConnections =- 1;
+			if (totConnections!=0) {
+			setRateLimit(R);
+			}
+		}
+		//rate limits all Sub Download
+		public void setRateLimit(double rateper) {
+			R = rateper;
+			double r = rateper/totConnections;
+			for (int conn=0;conn < totConnections  ;conn++){
+				sd[conn].RateLimit(r);
+			}	
+		}
+		
+		//pauses Sub Downloads
+		public void PauseDownload() {
+			for (int i=0;i<sd.length;i++) {
+				sd[i].setPause();
+			}
+		}
+		//checks if SubDownloads are paused
+		public boolean getPause() {
+			boolean p = true;
+			for (int i=0;i<sd.length;i++) {
+				if(sd[i].getPause()==false) {
+					p = false;
+					break;
+				}
+			}
+			return p;	
+		}
+		
+		public void run(){
+			if ( fileSize > 0 ) {
+				try {
 						StartDownload();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-		}
-
-		
+			}
+		}		
 }

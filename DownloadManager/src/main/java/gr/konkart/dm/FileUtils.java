@@ -15,7 +15,9 @@ public class FileUtils{
 	InputStream in = null;
 	int concatcomplete=0;
 	RandomAccessFile raf;
-	public void concat(String args[],String au) throws IOException{//concatenates the temporary files in order to create the final wanted file
+	
+	//concatenates the temporary files in order to create the final wanted file
+	public void concat(String args[],String au) throws IOException{
 	String[] getname = au.split("/");
 	String outfile=URLHandler.getFilename(getname[getname.length-1]);
 	File f = new File(outfile);
@@ -43,30 +45,36 @@ public class FileUtils{
 
 
 
- 	
-  	public void delete(String filename) throws IOException {//deletes the file
+	//deletes the file
+  	public void delete(String filename) throws IOException {
   	String name=URLHandler.getFilename(filename);
     File f = new File(home+"\\Downloads\\"+name);
     f.delete();
   	}
   	
-  	public void imgConv(String n , String t) {//image conversion method by creating a buffered image and writing on it
+  	/*image conversion method by creating a buffered image and writing on it
+  	*	t variable is the extension type that was chose on context menu
+  	*/
+  	public void imgConv(String n , String t) {
   		BufferedImage bufferedImage;
   		File inputFile = new File(n);
   		String split[] = n.split("\\.");
-  		String keepName = split[0]; 
-  		File outputFile = new File(keepName+"."+t);//t variable is the extension type that was chose on context menu
+  		String keepName = split[0];
+  	
+  		File outputFile = new File(keepName+"."+t);
 
   		try (InputStream is = new FileInputStream(inputFile)){
 			
   		 
   			bufferedImage = ImageIO.read(is);
-	  		try (OutputStream os = new FileOutputStream(outputFile)){ // create a blank, RGB, same width and height, and a white background
+  			// create a blank, RGB, same width and height, and a white background
+	  		try (OutputStream os = new FileOutputStream(outputFile)){ 
 	  		 
 	  		  BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
 	  				bufferedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
 	  		  newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, Color.WHITE, null);
-	  		  ImageIO.write(newBufferedImage, t, os);//write our image with the new extension (t)
+	  		//write our image with the new extension (t)
+	  		  ImageIO.write(newBufferedImage, t, os);
 	
 	  		  System.out.println("Done");
 	  				
@@ -81,19 +89,17 @@ public class FileUtils{
 			System.out.println("e1");
 		}
   	}
-  	//was audio
-  	public void videoConv(String n , String t) {//video conversion using ffmpeg
+  	//video conversion using ffmpeg
+  	public void videoConv(String n , String t) {
   		//File ffmpeg = new File("ffmpeg.exe");
   		String keepName[] = n.split("\\.");
   		pause();
-  		/*String absolutePath = ffmpeg.getAbsolutePath();
-  		String ffmpegPath = absolutePath.substring(0,absolutePath.lastIndexOf(File.separator));
-  		File ffmpegPath1 = new File(ffmpegPath);*/
   		System.out.println(n + keepName.length);
   		String nameOfFile = keepName[0];
   		File outputFile = new File(keepName+"."+t);
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -i "+n+" -crf 14 -speed fast -threads 4 "+nameOfFile+"."+t};
-  		Runnable task = () -> {//executes cmd command and reads the output
+  		//executes cmd command and reads the output
+  		Runnable task = () -> {
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);
@@ -125,6 +131,7 @@ public class FileUtils{
   		Thread thread = new Thread(task);                                                
   		thread.start(); 
   	}
+  	//audio conversion using ffmpeg
   	public void audioConv(String n , String t) {
   		String keepName[] = n.split("\\.");
   		pause();
@@ -132,7 +139,8 @@ public class FileUtils{
   		String nameOfFile = keepName[0];
   		File outputFile = new File(keepName+"."+t);
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
-  		Runnable task = () -> {//executes cmd command and reads the output
+  		//executes cmd command and reads the output
+  		Runnable task = () -> {
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);
@@ -163,6 +171,7 @@ public class FileUtils{
   		thread.start(); 
   	}
   	
+  	//a simple method that will pause for 1 second
   	static void pause(){
   	    long Time0 = System.currentTimeMillis();
   	    long Time1;

@@ -19,17 +19,17 @@ import bt.torrent.selector.SequentialSelector;
 
 
 public class Torrent implements Runnable{
-	String FileLoc;
-	long StartTime;
-	int Complete; //Completion flag
-	int DownloadId; //Download ID
-	public Torrent(String aFileLoc,int DownloadID){//Torrent constructor
-		FileLoc = aFileLoc;
-		DownloadId=DownloadID;
-		Complete=0;
+	String fileLoc;
+	long startTime;
+	int complete; //Completion flag
+	int downloadId; //Download ID
+	public Torrent(String fileLoc,int downloadID){//Torrent constructor
+		this.fileLoc = fileLoc;
+		this.downloadId=downloadID;
+		this.complete=0;
 
 		}
-	volatile boolean Paused=false; //Paused Flag
+	volatile boolean paused=false; //Paused Flag
 	long downloaded;//Downloaded Bytes
 	long downloadedS;//Variable used in download speed(gets 'downloaded's value)
 	int total;//total torrent pieces
@@ -74,13 +74,13 @@ public class Torrent implements Runnable{
 		BtClient client = Bt.client()
 		        .config(config)
 		        .storage(storage)
-		        .magnet(FileLoc)
+		        .magnet(fileLoc)
 		        .autoLoadModules()
 		        .stopWhenDownloaded()
 		        .module(dhtModule)
 		        .selector(selector)
 		        .build();
-		StartTime = System.currentTimeMillis();
+		startTime = System.currentTimeMillis();
 		//start client with callback every 1000ms
 		client.startAsync(state -> {
 			total = state.getPiecesTotal();
@@ -89,9 +89,9 @@ public class Torrent implements Runnable{
 			//if no pieces remaining stop client and flag as completed
 		    if (state.getPiecesRemaining() == 0) {
 		        client.stop();
-		        Complete = 1;
+		        complete = 1;
 		    }
-		    else if(Paused==true) {
+		    else if(paused==true) {
 		    	client.stop();
 		    }
 		  //get downloaded bytes
@@ -107,7 +107,7 @@ public class Torrent implements Runnable{
 		float current_speed;
 		downloadedS=downloaded;
 		if (downloadedS > 0 ) {
-		current_speed = (float)( downloadedS / (System.currentTimeMillis() - StartTime));
+		current_speed = (float)( downloadedS / (System.currentTimeMillis() - startTime));
 		downloadedS=0;
 		}
 		else {
@@ -115,8 +115,13 @@ public class Torrent implements Runnable{
 		}
 		NumberFormat formatter = NumberFormat.getNumberInstance() ;
 		formatter.setMaximumFractionDigits(2);
-
-		return " " + formatter.format(current_speed) + " KB/s ";
+		if (current_speed>1000) {
+			current_speed=current_speed/1000;
+			return " "+formatter.format(current_speed)+" MB/s ";
+		}
+		else {
+			return " "+formatter.format(current_speed)+" KB/s ";
+		}
 	}
 
 	public int getSize() {//gets the torrent's data size
@@ -135,7 +140,10 @@ public class Torrent implements Runnable{
 		
 	}
 	public void setTorPaused() {//funtion that is called to pause/stop the torrent
-		Paused = true;
+		paused = true;
+	}
+	public boolean getPaused() {
+		return paused;
 	}
 	
 }

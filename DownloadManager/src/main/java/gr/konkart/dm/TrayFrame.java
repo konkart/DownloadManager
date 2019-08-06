@@ -58,19 +58,13 @@ public TrayFrame() {
 	}
 	public void setToBottomRight() {
 	Point location = MouseInfo.getPointerInfo().getLocation();
-	/* screen position check to always place tray window on bottom right*/
+	/* screen position check to always place tray window near tray*/
 	 if (location.x + this.getWidth() > screen.x + screen.width) {
 		 location.x = screen.x + screen.width - this.getWidth();
-        }
-        if (location.x < screen.x) {
-        	location.x = screen.x;
         }
 
         if (location.y + this.getHeight() > screen.y + screen.height) {
         	location.y = screen.y + screen.height - this.getHeight();
-        }
-        if (location.y < screen.y) {
-        	location.y = screen.y;
         }
         this.setLocation(location);
 	}

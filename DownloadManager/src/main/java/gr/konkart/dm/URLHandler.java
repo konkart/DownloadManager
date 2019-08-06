@@ -20,11 +20,11 @@ public class URLHandler {
 		String content = contentA[1];
 		return content;
 	}
-	//figures if a URI is a URL or a magnet link
+	//method to identify if a path is a URL or a magnet link
 	public static String isUrl(String u) {
 		String isit = null;
 		
-		final String URL_REGEX = "^((https?|ftp)://|(www|ftp).)?[a-z0-9-]+(.[a-z0-9-]+)+([/?]*.*)*?$";// old ^((https?|ftp)://|(www|ftp)\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)+([/?].*)?$				
+		final String URL_REGEX = "^((https?|ftp)://|(www|ftp).)?[a-z0-9-]+(.[a-z0-9-]+)+([/?]*.*)*?$";				
 		final String MAGNET_REGEX= "^magnet:\\?xt=urn:btih:[a-zA-Z0-9]*.*";
 		Pattern p = Pattern.compile(URL_REGEX);
 		Pattern t = Pattern.compile(MAGNET_REGEX);
