@@ -1,25 +1,9 @@
 package gr.konkart.dm;
 
-import java.io.IOException;
 import java.net.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 public class URLHandler {
-	static String cont;
-	public URLHandler() {
-	URLHandler.cont = "ERROR";
-	}
-	//gets the type name of file
-	public static String gContentTypeA(String a) throws IOException {
-		
-		URL newurl = new URL(a);
-		URLConnection con = newurl.openConnection();
-		cont = con.getContentType();
-		System.out.println(con.getHeaderField("Connection"));
-		String[] contentA = cont.split("/");
-		String content = contentA[1];
-		return content;
-	}
 	//method to identify if a path is a URL or a magnet link
 	public static String isUrl(String u) {
 		String isit = null;
@@ -39,19 +23,40 @@ public class URLHandler {
 	//gets the filename from the link(url)
 	public static String getFilename(String pathfilename) {
 		String nameOfTheFile=pathfilename;
-		int p = Math.max(pathfilename.lastIndexOf('/'), pathfilename.lastIndexOf("\\"));
-		if(pathfilename.substring(p + 1).contains("?")) {
-			String parts[]=pathfilename.substring(p + 1).split("\\?");
-			nameOfTheFile=parts[0];
+		
+		boolean contentDisposition = false;
+		String parts[];
+		try {
+			URL urlObj = new URL(pathfilename);
+			URLConnection con = urlObj.openConnection();
+			if(con.getHeaderField("Content-Disposition")!=null) {
+				parts = con.getHeaderField("Content-Disposition").split("filename=");
+				nameOfTheFile = parts[1].replace("\"", "");
+				contentDisposition=true;
+			}
+			
+		}catch(Exception e) {
+			contentDisposition=false;
 		}
-		else {
-			nameOfTheFile=pathfilename.substring(p + 1);
+		if (contentDisposition==false){
+			try {
+				URL urlObj = new URL(pathfilename);
+				URLConnection con = urlObj.openConnection();
+				String urlPath = urlObj.getPath();
+				String fileName = urlPath.substring(urlPath.lastIndexOf('/')+1).trim();
+				String ext = con.getContentType();
+				ext = ext.substring(ext.lastIndexOf('/')+1);
+				if(!ext.equals("null") && !fileName.contains('.'+ext)) {
+						nameOfTheFile = fileName+'.'+ext;
+				}
+				else {
+					nameOfTheFile = fileName;
+				}
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
-			if (p >= 0) {
-				return nameOfTheFile;
-			} 
-			else {
-				return pathfilename;
-		}
-		}
+		return nameOfTheFile;
+	}
 }

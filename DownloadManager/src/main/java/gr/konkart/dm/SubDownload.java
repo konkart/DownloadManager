@@ -13,14 +13,16 @@ public class SubDownload implements Runnable{
 	public String fileLoc;
 	public long fileStartPos;
 	public long fileEndPos;
-	public long bytesDownloaded;
+	public long bytesDownloaded=0;
+	public long bytesDownloadedSession=0;
 	public byte Buffer[];
-	public int complete=0;
+	public boolean complete=false;
 	int downloadID;
 	public volatile double r = 0;
 	private volatile boolean paused = false;
 	FileOutputStream outputStream = null;
 	private boolean isNotPartial=false;
+	boolean failed = false;
 	String home = System.getProperty("user.home");
 public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID){
 
@@ -28,17 +30,15 @@ public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fi
 		this.fileStartPos=fileStartPos;//start byte of the "to-download" range
 		this.fileEndPos=fileEndPos;//end byte of the range
 		Buffer = new byte[bufferSize];	
-		bytesDownloaded=0;
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
-		complete=0;
-
+		complete=false;
 		}
 
 public int SubDownloadStart(){ return 1;}
 
 public void run(){
-	System.out.println(subDownloadId+" "+fileLoc);
+	
 		try{
 			
 			paused=false;
@@ -68,7 +68,6 @@ public void run(){
 					outputStream = new FileOutputStream(f);
 					
 				}
-				paused=false;
 				}
 			
 			//else if file not exists the start and end of the bytes to be downloaded are not changed
@@ -84,15 +83,12 @@ public void run(){
 			long now;
 			long downed = 0L;
 			if(fileStartPos<=fileEndPos) {
-			while(bytesDownloaded < (fileEndPos - fileStartPos) && paused==false)
-			{
-				
-				
+			while(bytesDownloadedSession < (fileEndPos - fileStartPos) && paused==false){
 					
 				while (paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
 		            	outputStream.write(buffer, 0, bytesRead);
 		            	bytesDownloaded += bytesRead;
-		            	
+		            	bytesDownloadedSession = bytesDownloaded;
 		            	//speed rate check and limit
 		            	if (r!=0 && downed>(r*1000) && ((now=System.currentTimeMillis())-oldtime)<ltest) {
 		            	Thread.sleep(ltest-(now-oldtime));
@@ -109,26 +105,21 @@ public void run(){
 			}
 			outputStream.close();
 	        inputStream.close();
-	        System.out.println("IsCLosed");
 	        if(paused==false){
-	        complete=1;
-	        
+	        complete=true;
 			}
 
 
 		}catch(Exception e){
+			paused=true;
+			complete=false;
+			failed=true;
 			try {
 				outputStream.close();
-				paused=true;
-				complete=0;
-				System.out.println("IsCLosed");
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				
 			}
-	        
 		}
-			
 
 		}
 

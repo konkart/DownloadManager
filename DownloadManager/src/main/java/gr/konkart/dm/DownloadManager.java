@@ -236,17 +236,12 @@ public class DownloadManager {
 			String type;
 			if(URLHandler.isUrl(textField.getText())=="URL") {
 				type = "URL";
-				System.out.println("it is a URL");
+				
 				fileLoc = textField.getText();
 				textField.setText("");
-				try {
-					String ext = URLHandler.gContentTypeA(fileLoc);
-					System.out.println(ext);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				String[] item={""+downloadID+"",URLHandler.getFilename(fileLoc),"0%  0 KB/s","0",getDateTime(),fileLoc};
-				String[] itemTray={URLHandler.getFilename(fileLoc),"0%"};
+				String fileN = URLHandler.getFilename(fileLoc);
+				String[] item={""+downloadID+"",fileN,"0%  0 KB/s","0",getDateTime(),fileLoc};
+				String[] itemTray={fileN,"0%"};
 				
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
@@ -260,7 +255,6 @@ public class DownloadManager {
 					pool.execute(dMonitor);
 					downloadID = downloadID + 1;
 					active=active+1;
-					System.out.println(df.length);
 					if(rateState==true) {
 						 try {
 								Thread.sleep(300);
@@ -433,14 +427,9 @@ public class DownloadManager {
     				type = "URL";
     				System.out.println("it is a URL");
     				fileLoc = textField.getText();
-    				try {
-    					String ext = URLHandler.gContentTypeA(fileLoc);
-    					System.out.println(ext);
-    				} catch (IOException e1) {
-    					e1.printStackTrace();
-    				}
-    				String[] item={""+downloadID+"",URLHandler.getFilename(fileLoc),"0%  0 KB/s","0",getDateTime(),fileLoc};
-    				String[] itemTray={URLHandler.getFilename(fileLoc),"0%"};
+    				String fileN = URLHandler.getFilename(fileLoc);
+    				String[] item={""+downloadID+"",fileN,"0%  0 KB/s","0",getDateTime(),fileLoc};
+    				String[] itemTray={fileN,"0%"};
     				
     				model.addRow(item);
     				trayframe.modelTray.addRow(itemTray);
@@ -587,13 +576,15 @@ public class DownloadManager {
 	        int row = table_1.getSelectedRow();
 	        file = table_1.getModel().getValueAt(row, 1).toString();
 	        Path source = Paths.get(home+"\\Downloads\\"+file);
-	        try {
-				fileMIME = Files.probeContentType(source).split("/");
-				filetype = fileMIME[0].toString();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+	        if(source.toFile().exists()) {
+		        try {
+					fileMIME = Files.probeContentType(source).split("/");
+					filetype = fileMIME[0].toString();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+	        }
 			progress = table_1.getModel().getValueAt(row, 2).toString();
 			String status = table_1.getModel().getValueAt(row, 3).toString();
 			String percentSplit[] = progress.split("%");
@@ -756,109 +747,73 @@ public class DownloadManager {
 	    mp4.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.videoConv(home+"\\Downloads\\"+file,"mp4");
+				getFileandConv(0,"mp4");
 			}
 	    });
 	    webm.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.videoConv(home+"\\Downloads\\"+file,"webm");	
+				getFileandConv(0,"webm");
 			}
 	    });
 	    avi.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.videoConv(home+"\\Downloads\\"+file,"avi");
+				getFileandConv(0,"avi");
 			}
 	    });
 	    flv.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.videoConv(home+"\\Downloads\\"+file,"flv");
+				getFileandConv(0,"flv");
 			}
 	    });
 	    mp3.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.audioConv(home+"\\Downloads\\"+file,"mp3");
+				getFileandConv(2,"mp3");
 			}
 	    });
 	    ogg.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.audioConv(home+"\\Downloads\\"+file,"ogg");
+				getFileandConv(2,"ogg");
 			}
 	    });
 	    acc.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.audioConv(home+"\\Downloads\\"+file,"acc");
+				getFileandConv(2,"acc");
 			}
 	    });
 	    wav.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.audioConv(home+"\\Downloads\\"+file,"wav");
+				getFileandConv(2,"wav");
 			}
 	    });
 	    png.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.imgConv(home+"\\Downloads\\"+file,"png");	
+				getFileandConv(1,"png");
 			}
 	    });
 	    bmp.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.imgConv(home+"\\Downloads\\"+file,"bmp");	
+				getFileandConv(1,"bmp");
 			}
 	    });
 	    gif.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.imgConv(home+"\\Downloads\\"+file,"gif");
+				getFileandConv(1,"gif");
 			}
 	    });
 	    jpg.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-					int row = table_1.getSelectedRow();
-					String file = table_1.getModel().getValueAt(row, 1).toString();
-					FileUtils conv = new FileUtils();
-					conv.imgConv(home+"\\Downloads\\"+file,"jpg");
+				getFileandConv(1,"jpg");
 			}
 	    });
 	    //method to copy URL to clipboard	
@@ -903,7 +858,6 @@ public class DownloadManager {
 					}
 					else {type="Torrent";}
 					int column = 0;
-					System.out.println(type);
 					if (type=="URL") {
 						
 						int row = table_1.getSelectedRow();
@@ -944,27 +898,30 @@ public class DownloadManager {
 				  else {type="Torrent";}
 				  int column = 0;
 				  if (type=="URL") {
-				  int row = table_1.getSelectedRow();
-				  String value = table_1.getModel().getValueAt(row, column).toString();
-				  String url = table_1.getModel().getValueAt(row, 5).toString();
-				  System.out.println("bro"+" "+df[Integer.parseInt(value)].getPause());
-				  if(df[Integer.parseInt(value)].getPause()==true || df[Integer.parseInt(value)].complete==1) {
-				  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,totalConnections,bufferLen);
-				  df[Integer.parseInt(value)] = download;
-				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
-				  pool.execute(df[Integer.parseInt(value)]);
-				  pool.execute(dMonitor);
-				  active=active+1;
-				  if(rateState==true) {
+					  int row = table_1.getSelectedRow();
+					  String value = table_1.getModel().getValueAt(row, column).toString();
+					  String url = table_1.getModel().getValueAt(row, 5).toString();
 					  try {
-							Thread.sleep(300);
-						} catch (InterruptedException s) {
-							// TODO Auto-generated catch block
-							s.printStackTrace();
-						}
-						downloadSpeedLimit(speedLimitNumber);
-					}
-				  }
+						  if(df[Integer.parseInt(value)].getPause()==true || df[Integer.parseInt(value)].complete==1) {
+						  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,totalConnections,bufferLen);
+						  df[Integer.parseInt(value)] = download;
+						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
+						  pool.execute(df[Integer.parseInt(value)]);
+						  pool.execute(dMonitor);
+						  active=active+1;
+						  if(rateState==true) {
+							  try {
+									Thread.sleep(300);
+								} catch (InterruptedException s) {
+									// TODO Auto-generated catch block
+									s.printStackTrace();
+								}
+								downloadSpeedLimit(speedLimitNumber);
+							}
+						  }
+					  }catch(Exception e1) {
+						  e1.printStackTrace();
+					  }
 				  }
 				  else if(type=="Torrent"){
 					  int row = table_2.getSelectedRow();
@@ -1010,7 +967,9 @@ public class DownloadManager {
 		   public void run(){
 		   int currThread=0;
 		   int dconnections=0;
-		   int Downloadcomplete = 1;
+		   boolean downloadcomplete = true;
+		   boolean failed = false;
+		   boolean failCheck = true;
 		   String[] files;
 		   FileUtils futils = new FileUtils();
 		   System.out.println("Monitor");
@@ -1023,51 +982,62 @@ public class DownloadManager {
 				      	 null,"Download Failed.Try Downloading Again or verify URL is Correct" ,
               		 "INFORMATION",JOptionPane.INFORMATION_MESSAGE);
               gui.updateStatus(currThread,true,typeof);
-              		 				
-		   		}
-		   			
+              failed=true;
+		   } 			
 		   
-		   while(gui.df[currThread].complete == 0)
+		   while(gui.df[currThread].complete == 0 && failed==false)
 		   {
 			   dconnections = gui.df[currThread].totConnections;
 			   if (gui.df[currThread].complete == 0 && gui.df[currThread].activeSubConn == dconnections ){
-				   gui.updateStatus(currThread,false,typeof);
-				   Downloadcomplete = 1;//Flag
-				   files =  new String[dconnections];
-				   for(int subDown = 0; subDown < dconnections ; subDown ++){
-					   files[subDown]= gui.df[currThread].getSubDownId(subDown);
-					   if(gui.df[currThread].isSubDownComplete(subDown) == 0){
-						   Downloadcomplete = 0; //Download Incomplete
+				   
+				   if(failCheck=true) {
+					   for(int subDown = 0; subDown < dconnections ; subDown ++){
+						   if(gui.df[currThread].isSubDownFailed(subDown) == true){
+							   failed = true; //Download Failed
+							   break;
+						   }
+					   }
+					   failCheck=false;
+					   if(failed==true) {
+						   gui.updateStatus(currThread,true,typeof);
 						   break;
 					   }
 				   }
-				   if (Downloadcomplete == 1 || gui.df[currThread].getPause() == true){
-					   if(!gui.df[currThread].getPause()) {
+				   gui.updateStatus(currThread,false,typeof);
+				   downloadcomplete = true;//Flag
+				   files =  new String[dconnections];
+				   
+				   for(int subDown = 0; subDown < dconnections ; subDown ++){
+					   files[subDown]= gui.df[currThread].getSubDownId(subDown);
+					   if(gui.df[currThread].isSubDownComplete(subDown) == false){
+						   downloadcomplete = false; //Download Incomplete
+						   break;
+					   }
+				   }
+				   if (downloadcomplete == true) {
+					  
 						   try {
 							   futils.concat(files,gui.df[currThread].FilePath);
 							   active=active-1;
 								if(rateState==true) {
-									   try {
 										Thread.sleep(300);
-									} catch (InterruptedException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
 										downloadSpeedLimit(speedLimitNumber);
 									}
-								} catch (IOException e) {
-										e.printStackTrace();
+								
+								for(int fileid=0;fileid < dconnections;fileid++) {
+			   						
+								futils.delete(files[fileid]);
+								gui.df[currThread].complete = 1;
 								}
-							for(int fileid=0;fileid < dconnections;fileid++) {
-			   						try {
-										futils.delete(files[fileid]);
-										gui.df[currThread].complete = 1;
-			   						} catch (IOException e) {
-										e.printStackTrace();
-									}
-		   						}
-		   					}
-					   else {
+			   						
+						   } catch (IOException e) {
+							   e.printStackTrace();
+						   } catch (InterruptedException e) {
+							   e.printStackTrace();
+						}
+						   
+				   }
+				   else if(gui.df[currThread].getPause()) {
 						   gui.df[currThread].complete = 1;
 						   active=active-1;
 						   try {
@@ -1078,10 +1048,10 @@ public class DownloadManager {
 						   if(rateState==true) {
 								downloadSpeedLimit(speedLimitNumber);
 						   }
-					   }
-					   gui.updateStatus(currThread,false,typeof);
-					   System.out.println("Monitor");
+						   
 				   }
+				   gui.updateStatus(currThread,false,typeof);
+				   
 			   }
 			   try {
 				   Thread.sleep(1000);
@@ -1089,7 +1059,9 @@ public class DownloadManager {
 				   e.printStackTrace();
 			   }
 		   }
+		   if(failed==false) {
 		   gui.model.setValueAt(String.valueOf(gui.df[currThread].DownloadProgress())+"%  0 KB/s",currThread,2);
+		   }
 		   }
 		   else if(typeof=="Torrent") {
 			   System.out.println("monitoring");
@@ -1200,5 +1172,25 @@ public class DownloadManager {
     			}
     			System.out.println("Out of time!");
             }}, x, TimeUnit.SECONDS);
+	}
+	/*
+	 * method to grab file from selected row and convert it to given format
+	 * type: 0 for video,1 for images,2 for audio
+	 */
+	public void getFileandConv(int type,String ext) {
+		int row = table_1.getSelectedRow();
+		String file = table_1.getModel().getValueAt(row, 1).toString();
+		FileUtils conv = new FileUtils();
+		switch(type) {
+		case 0:
+			conv.videoConv(home+"\\Downloads\\"+file,ext);
+			break;
+		case 1:
+			conv.imgConv(home+"\\Downloads\\"+file,ext);
+			break;
+		case 2:
+			conv.audioConv(home+"\\Downloads\\"+file,ext);
+		break;
+		}
 	}
 }

@@ -33,7 +33,7 @@ public class DownloadFile implements Runnable{
 			url = new URL(this.fileLoc);
 			URLConnection uc = url.openConnection();
 			fileSize = uc.getContentLength();
-			FilePath = url.getPath();
+			FilePath = URLHandler.getFilename(url.toString());
 			isPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
 			}catch(Exception e){}
 		};
@@ -77,64 +77,71 @@ public class DownloadFile implements Runnable{
 			String nameofFile = URLHandler.getFilename(fileLoc);
 			//Download initialization
 			if (isPartial==true) {
-			//Multipart Download initialization
-			sd = new SubDownload[totConnections];
-			//Dividing the file size to get size for each sub part
-			partsize= (long)(fileSize/totConnections);
+				//Multipart Download initialization
+				sd = new SubDownload[totConnections];
+				//Dividing the file size to get size for each sub part
+				partsize= (long)(fileSize/totConnections);
 
-			//Part initialization
-			for (conn=0;conn<totConnections;conn++){
-				
-						//Last part initialization
-						if ( conn == (totConnections - 1)) {
-							fStartPos=conn*partsize;
-							fEndPos= fileSize;
-						}
-						//Parts initialization
-						else {
-							fStartPos=conn*partsize;
-							fEndPos= fStartPos + partsize - 1;
-						}
-						//part name and temporary extension
-						partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
-						//Subdownload creation
-						sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID);
-						startTime=System.currentTimeMillis();
-						pool.execute(sd[conn]);
-						activeSubConn = activeSubConn + 1;
-					}
-
-				
-				}
-				else {
-					//Single part download initialization
-					totConnections = 1;
-					sd = new SubDownload[totConnections];
+				//Part initialization
+				for (conn=0;conn<totConnections;conn++){
 					
-					conn=0;
-					partsize= fileSize;
-					fStartPos = 0;
-					fEndPos= fileSize;
+					//Last part initialization
+					if ( conn == (totConnections - 1)) {
+						fStartPos=conn*partsize;
+						fEndPos= fileSize;
+					}
+					//Parts initialization
+					else {
+						fStartPos=conn*partsize;
+						fEndPos= fStartPos + partsize - 1;
+					}
+					//part name and temporary extension
 					partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
-					sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID);
+					//Subdownload creation
+					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID);
 					startTime=System.currentTimeMillis();
-					sd[0].setIsNotPartial();
-					pool.execute(sd[0]);
+					pool.execute(sd[conn]);
+							
 					activeSubConn = activeSubConn + 1;
 				}
+
+				
+			}
+			else {
+				//Single part download initialization
+				totConnections = 1;
+				sd = new SubDownload[totConnections];
+					
+				conn=0;
+				partsize= fileSize;
+				fStartPos = 0;
+				fEndPos= fileSize;
+				partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
+				sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID);
+				startTime=System.currentTimeMillis();
+				sd[0].setIsNotPartial();
+				pool.execute(sd[0]);
+					
+				activeSubConn = activeSubConn + 1;
+				}
+			pool.shutdown();
 			
 		}
 		//check if a subdownload is completed
-		public int isSubDownComplete(int id){
-				return sd[id].complete;
+		public boolean isSubDownComplete(int id){
+			return sd[id].complete;
+		}
+		//checks if subdownload failed
+		public boolean isSubDownFailed(int id) {
+			return sd[id].failed;
 		}
 		//download progress calc
 		public int DownloadProgress(){
-				int pcount=0;
-				calcBytesDownloaded();
-				if ( bytesDownloaded > 0 && fileSize > 0 )
-				pcount = (int)((( bytesDownloaded * 100 ) / fileSize)) ;
-				return pcount;
+			int pcount=0;
+			calcBytesDownloaded();
+			if ( bytesDownloaded > 0 && fileSize > 0 )
+			pcount = (int)((( bytesDownloaded * 100 ) / fileSize)) ;
+			return pcount;
 		}
 		
 		//get Sub download ID
@@ -149,18 +156,11 @@ public class DownloadFile implements Runnable{
 					bytesDownloaded=bytesDownloaded + sd[conn].bytesDownloaded;
 				}
 		}
-		//method to update the speed limit on all active subdownloads when one is completed
-		public synchronized void OneSubIsCompleted() {
-			totConnections =- 1;
-			if (totConnections!=0) {
-			setRateLimit(R);
-			}
-		}
 		//rate limits all Sub Download
 		public void setRateLimit(double rateper) {
 			R = rateper;
 			double r = rateper/totConnections;
-			for (int conn=0;conn < totConnections  ;conn++){
+			for (int conn=0;conn<totConnections;conn++){
 				sd[conn].RateLimit(r);
 			}	
 		}
@@ -175,8 +175,9 @@ public class DownloadFile implements Runnable{
 		public boolean getPause() {
 			boolean p = true;
 			for (int i=0;i<sd.length;i++) {
-				if(sd[i].getPause()==false) {
+				if(sd[i].getPause()==false && !pool.isTerminated()) {
 					p = false;
+					
 					break;
 				}
 			}

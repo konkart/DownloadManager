@@ -13,13 +13,11 @@ import javax.swing.JOptionPane;
 public class FileUtils{
 	String home = System.getProperty("user.home");
 	InputStream in = null;
-	int concatcomplete=0;
 	RandomAccessFile raf;
 	
 	//concatenates the temporary files in order to create the final wanted file
 	public void concat(String args[],String au) throws IOException{
-	String[] getname = au.split("/");
-	String outfile=URLHandler.getFilename(getname[getname.length-1]);
+	String outfile=au;
 	File f = new File(outfile);
 	
 	OutputStream out = new FileOutputStream(home+"\\Downloads\\"+f);
@@ -37,8 +35,6 @@ public class FileUtils{
         in.close();
     }
     out.close();
-    
-	concatcomplete=1;
 	System.out.println("concat complete");
 	
 	}
@@ -47,7 +43,7 @@ public class FileUtils{
 
 	//deletes the file
   	public void delete(String filename) throws IOException {
-  	String name=URLHandler.getFilename(filename);
+  	String name=filename;
     File f = new File(home+"\\Downloads\\"+name);
     f.delete();
   	}
