@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 public class DownloadFile implements Runnable{
 	public String fileLoc;     		//File URL 
 	public String FilePath;
+	public String location;		//location on disk
 	public long fileSize;	 	    //File Size
 	public long bytesDownloaded;	//Bytes Downloaded
 	public int totConnections;		//Total Connections
@@ -20,14 +21,16 @@ public class DownloadFile implements Runnable{
 	public long startTime;
 	public boolean isPartial;		//Flag to check if webhost supports partial(multipart) download
 	int r=0;
+	
 	volatile double R=0;
 	public URL url;
 	ExecutorService pool = Executors.newCachedThreadPool();
-	public DownloadFile(int DownloadID,String FileLoc,int TotConnections,int BufferSize){
-		this.fileLoc = FileLoc;
-		this.totConnections = TotConnections;
-		this.bufferSize = BufferSize;
-		this.downloadID= DownloadID;
+	public DownloadFile(int downloadID,String fileLoc,int totConnections,int bufferSize,String location){
+		this.fileLoc = fileLoc;
+		this.totConnections = totConnections;
+		this.bufferSize = bufferSize;
+		this.downloadID = downloadID;
+		this.location = location;
 		activeSubConn=0;
 			try{
 			url = new URL(this.fileLoc);
@@ -98,7 +101,7 @@ public class DownloadFile implements Runnable{
 					//part name and temporary extension
 					partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
 					//Subdownload creation
-					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID);
+					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location);
 					startTime=System.currentTimeMillis();
 					pool.execute(sd[conn]);
 							
@@ -117,7 +120,7 @@ public class DownloadFile implements Runnable{
 				fStartPos = 0;
 				fEndPos= fileSize;
 				partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
-				sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID);
+				sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID,location);
 				startTime=System.currentTimeMillis();
 				sd[0].setIsNotPartial();
 				pool.execute(sd[0]);

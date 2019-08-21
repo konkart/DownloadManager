@@ -11,6 +11,7 @@ public class SubDownload implements Runnable{
     public long startTime;
 	public String subDownloadId;
 	public String fileLoc;
+	public String location;
 	public long fileStartPos;
 	public long fileEndPos;
 	public long bytesDownloaded=0;
@@ -23,13 +24,13 @@ public class SubDownload implements Runnable{
 	FileOutputStream outputStream = null;
 	private boolean isNotPartial=false;
 	boolean failed = false;
-	String home = System.getProperty("user.home");
-public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID){
+public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location){
 
 		this.fileLoc=fileLoc;//URL to file
 		this.fileStartPos=fileStartPos;//start byte of the "to-download" range
 		this.fileEndPos=fileEndPos;//end byte of the range
 		Buffer = new byte[bufferSize];	
+		this.location=location;
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
 		complete=false;
@@ -47,7 +48,7 @@ public void run(){
 			uc.setRequestProperty("connection","Keep-Alive");
 			
 			//partial file save location
-			File f = new File(home+"\\Downloads\\"+subDownloadId);
+			File f = new File(location+subDownloadId);
 			//if file exists already it reads its size in bytes and adds it to the initial number-byte to start download from
 			if (f.exists()) {
 				/*if a non-partial download has been previously stopped, it will instead start over when it is to be resumed*/

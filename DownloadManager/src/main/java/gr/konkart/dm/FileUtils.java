@@ -11,22 +11,23 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 public class FileUtils{
-	String home = System.getProperty("user.home");
+	String location;
 	InputStream in = null;
 	RandomAccessFile raf;
 	
 	//concatenates the temporary files in order to create the final wanted file
-	public void concat(String args[],String au) throws IOException{
-	String outfile=au;
+	public void concat(String args[],String au,String location) throws IOException{
+	String outfile = au;
+	this.location = location;
 	File f = new File(outfile);
 	
-	OutputStream out = new FileOutputStream(home+"\\Downloads\\"+f);
+	OutputStream out = new FileOutputStream(location+f);
 	
 	
     byte[] buf = new byte[1024*4];
     for (String file : args) {
         
-		InputStream in = new FileInputStream(home+"\\Downloads\\"+file);
+		InputStream in = new FileInputStream(location+file);
         int b = 0;
         while ( (b = in.read(buf)) >= 0) {
             out.write(buf, 0, b);
@@ -42,9 +43,9 @@ public class FileUtils{
 
 
 	//deletes the file
-  	public void delete(String filename) throws IOException {
+  	public void delete(String filename,String location) throws IOException {
   	String name=filename;
-    File f = new File(home+"\\Downloads\\"+name);
+    File f = new File(location+name);
     f.delete();
   	}
   	

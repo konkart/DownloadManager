@@ -21,13 +21,15 @@ import bt.torrent.selector.SequentialSelector;
 public class Torrent implements Runnable{
 	String fileLoc;
 	long startTime;
-	int complete; //Completion flag
+	boolean complete; //Completion flag
 	int downloadId; //Download ID
-	public Torrent(String fileLoc,int downloadID){//Torrent constructor
+	String location;
+	boolean stopped = false;
+	public Torrent(String fileLoc,int downloadID,String location){//Torrent constructor
 		this.fileLoc = fileLoc;
-		this.downloadId=downloadID;
-		this.complete=0;
-
+		this.downloadId = downloadID;
+		this.complete = false;
+		this.location = location;
 		}
 	volatile boolean paused=false; //Paused Flag
 	long downloaded;//Downloaded Bytes
@@ -64,7 +66,7 @@ public class Torrent implements Runnable{
 		});
 
 		// get download directory
-		Path targetDirectory = new File(home+"\\Downloads\\").toPath();
+		Path targetDirectory = new File(location).toPath();
 
 		// create file system based backend for torrent data
 		Storage storage = new FileSystemStorage(targetDirectory);
@@ -89,10 +91,12 @@ public class Torrent implements Runnable{
 			//if no pieces remaining stop client and flag as completed
 		    if (state.getPiecesRemaining() == 0) {
 		        client.stop();
-		        complete = 1;
+		        complete = true;
+		        stopped = true;
 		    }
 		    else if(paused==true) {
 		    	client.stop();
+		    	stopped = true;
 		    }
 		  //get downloaded bytes
 		    downloaded=state.getDownloaded();
