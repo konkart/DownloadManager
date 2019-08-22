@@ -21,10 +21,10 @@ import bt.torrent.selector.SequentialSelector;
 public class Torrent implements Runnable{
 	String fileLoc;
 	long startTime;
-	boolean complete; //Completion flag
-	int downloadId; //Download ID
-	String location;
-	boolean stopped = false;
+	private boolean complete; //Completion flag
+	private int downloadId; //Download ID
+	private String location;
+	private boolean stopped = false;
 	public Torrent(String fileLoc,int downloadID,String location){//Torrent constructor
 		this.fileLoc = fileLoc;
 		this.downloadId = downloadID;
@@ -32,14 +32,13 @@ public class Torrent implements Runnable{
 		this.location = location;
 		}
 	volatile boolean paused=false; //Paused Flag
-	long downloaded;//Downloaded Bytes
-	long downloadedS;//Variable used in download speed(gets 'downloaded's value)
-	int total;//total torrent pieces
-	int piece;//completed pieces
-	int perce;//percentage
+	private long downloaded;//Downloaded Bytes
+	private long downloadedS;//Variable used in download speed(gets 'downloaded's value)
+	private int total;//total torrent pieces
+	private int piece;//completed pieces
+	private int perce;//percentage
 	@Override
 	public void run() {
-			String home = System.getProperty("user.home");
 			System.setProperty("java.net.preferIPv4Stack" , "true");
 		
 		//torrent client config	
@@ -142,6 +141,12 @@ public class Torrent implements Runnable{
 			return perce;
 		}
 		
+	}
+	public boolean getComplete() {
+		return complete;
+	}
+	public boolean getStopped() {
+		return stopped;
 	}
 	public void setTorPaused() {//funtion that is called to pause/stop the torrent
 		paused = true;

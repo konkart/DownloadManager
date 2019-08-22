@@ -79,13 +79,13 @@ public class DownloadManager {
 	public int totalConnections = 5;
 	public int bufferLen = 2024;
 	public boolean rateState=false;
-	public volatile int wantedDownloadSpeed=0; //0 is unlimited
 	JMenuItem pause;
 	JMenuItem resume;
 	JMenuItem delete;
 	JMenuItem open;
 	JMenuItem copyToCl;
 	JMenuItem move;
+	JMenuItem openFolder;
 	JMenu sectionsMenu;
 	JMenuItem mp4;
 	JMenuItem webm;
@@ -101,7 +101,7 @@ public class DownloadManager {
 	JMenuItem png;
 	JTabbedPane tabbedPane;
 	String homeDefault = System.getProperty("user.home")+"\\Downloads\\";
-	double speedLimitNumber=0;
+	volatile double speedLimitNumber=0;
 	int active=0;
 	ExecutorService pool = Executors.newCachedThreadPool();
 	public static void main(String[] args) throws IOException {
@@ -390,20 +390,21 @@ public class DownloadManager {
 		btnSchedule.setBounds(386, 41, 119, 23);
 		frame.getContentPane().add(btnSchedule);
 		
-		JButton openFolder = new JButton("Open downloads folder");
+		JButton	chooseFolder = new JButton("Set downloads folder");
 		
 		//button that opens downloads folder
-		openFolder.addActionListener(new ActionListener() {
+		chooseFolder.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				try {
-					Desktop.getDesktop().open(new File(homeDefault));
-				} catch (IOException e1) {
-					e1.printStackTrace();
+				JFileChooser fchooser = new JFileChooser(new File(homeDefault));
+				fchooser.setAcceptAllFileFilterUsed(false);
+				fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+					homeDefault = fchooser.getSelectedFile().getAbsolutePath()+"\\";
 				}
 			}
 		});
-		openFolder.setBounds(10, 11, 34, 20);
-		frame.getContentPane().add(openFolder);
+		chooseFolder.setBounds(10, 11, 34, 20);
+		frame.getContentPane().add(chooseFolder);
 
 		//button that calls the scheduled method with the time given by the spinner componments
 		btnSchedule.addActionListener(new ActionListener()
@@ -485,6 +486,9 @@ public class DownloadManager {
 		move = new JMenuItem("Move to...");
 		popup.add(move);
 		move.setVisible(false);
+		openFolder = new JMenuItem("Open folder");
+		popup.add(openFolder);
+		move.setVisible(false);
 	    pause = new JMenuItem("Pause");
 	    popup.add(pause);
 	    resume = new JMenuItem("Resume");
@@ -559,7 +563,7 @@ public class DownloadManager {
 				int per = Integer.parseInt(percent);
 				if (per>0 && per<100) {
 					open.setVisible(true);
-					if (tr[Integer.parseInt(value)].stopped==true) {
+					if (tr[Integer.parseInt(value)].getStopped()==true) {
 						delete.setVisible(true);
 						move.setVisible(true);
 					}
@@ -794,7 +798,29 @@ public class DownloadManager {
 					}
 			}
 	    	
-	    });	
+	    });
+	    
+	    openFolder.addActionListener(new ActionListener() {
+	    	
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if(tabbedPane.getSelectedIndex()==0) {
+				row = table_1.getSelectedRow();
+		        file = table_1.getModel().getValueAt(row, 1).toString();
+		        location = table_1.getModel().getValueAt(row, 6).toString();
+				File filetoOpen = new File(location);
+				Desktop desktop = Desktop.getDesktop();
+		        if(filetoOpen.exists()) {
+					try {
+						desktop.open(filetoOpen);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+		        }
+				}
+			}
+	    	
+	    });
 	    
 	    /*
 	     * methods to convert the file to the format that is clicked
@@ -957,7 +983,7 @@ public class DownloadManager {
 					  String url = table_1.getModel().getValueAt(row, 5).toString();
 					  location = table_1.getModel().getValueAt(row, 6).toString();
 					  try {
-						  if(df[Integer.parseInt(value)].getPause()==true || df[Integer.parseInt(value)].complete==1) {
+						  if(df[Integer.parseInt(value)].getPause()==true || df[Integer.parseInt(value)].getComplete()==1) {
 						  DownloadFile download = new DownloadFile(Integer.parseInt(value),url,totalConnections,bufferLen,location);
 						  df[Integer.parseInt(value)] = download;
 						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
@@ -982,7 +1008,7 @@ public class DownloadManager {
     				  value = table_2.getModel().getValueAt(row, column).toString();
     				  String magnet = table_2.getModel().getValueAt(row, 5).toString();
     				  location = table_2.getModel().getValueAt(row, 6).toString();
-    				  if(tr[Integer.parseInt(value)].getPaused()==true || tr[Integer.parseInt(value)].complete==true) {
+    				  if(tr[Integer.parseInt(value)].getPaused()==true || tr[Integer.parseInt(value)].getComplete()==true) {
     				  Torrent to = new Torrent(magnet,Integer.parseInt(value),location);
     				  tr[Integer.parseInt(value)]=to;
     				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"Torrent");
@@ -1031,8 +1057,8 @@ public class DownloadManager {
 		   currThread= threadIndex;
 		   if (typeof=="URL") {
 		   //gui.updateStatus(currThread);
-		   if (gui.df[currThread].fileSize == -1){
-		   		gui.df[currThread].complete =-1;
+		   if (gui.df[currThread].getFileSize() == -1){
+		   		gui.df[currThread].setComplete(-1);
 				JOptionPane.showMessageDialog(
 				      	 null,"Download Failed.Try Downloading Again or verify URL is Correct" ,
               		 "INFORMATION",JOptionPane.INFORMATION_MESSAGE);
@@ -1040,18 +1066,13 @@ public class DownloadManager {
               failed=true;
 		   } 			
 		   
-		   while(gui.df[currThread].complete == 0 && failed==false)
+		   while(gui.df[currThread].getComplete() == 0 && failed==false)
 		   {
-			   dconnections = gui.df[currThread].totConnections;
-			   if (gui.df[currThread].complete == 0 && gui.df[currThread].activeSubConn == dconnections ){
+			   dconnections = gui.df[currThread].getTotConnections();
+			   if (gui.df[currThread].getComplete() == 0 && gui.df[currThread].getActiveSubConn() == dconnections ){
 				   
 				   if(failCheck=true) {
-					   for(int subDown = 0; subDown < dconnections ; subDown ++){
-						   if(gui.df[currThread].isSubDownFailed(subDown) == true){
-							   failed = true; //Download Failed
-							   break;
-						   }
-					   }
+					   failed = gui.df[currThread].isDownloadFailed();
 					   failCheck=false;
 					   if(failed==true) {
 						   gui.updateStatus(currThread,true,typeof);
@@ -1059,21 +1080,15 @@ public class DownloadManager {
 					   }
 				   }
 				   gui.updateStatus(currThread,false,typeof);
-				   downloadcomplete = true;//Flag
+				   downloadcomplete = gui.df[currThread].isDownloadComplete();//Flag
 				   files =  new String[dconnections];
-				   
-				   for(int subDown = 0; subDown < dconnections ; subDown ++){
-					   files[subDown]= gui.df[currThread].getSubDownId(subDown);
-					   if(gui.df[currThread].isSubDownComplete(subDown) == false){
-						   downloadcomplete = false; //Download Incomplete
-						   break;
-					   }
-				   }
 				   if (downloadcomplete == true) {
-					  
-						   try {
-							   futils.concat(files,gui.df[currThread].FilePath,gui.df[currThread].location);
-							   active=active-1;
+					   for(int subDown = 0; subDown < gui.df[currThread].getTotConnections() ; subDown ++){
+						   files[subDown]= gui.df[currThread].getSubDownId(subDown);
+					   }
+					   try {
+						   futils.concat(files,gui.df[currThread].FilePath,gui.df[currThread].getLocation());
+						   active=active-1;
 								if(rateState==true) {
 										Thread.sleep(300);
 										downloadSpeedLimit(speedLimitNumber);
@@ -1081,8 +1096,8 @@ public class DownloadManager {
 								
 								for(int fileid=0;fileid < dconnections;fileid++) {
 			   						
-								futils.delete(files[fileid],gui.df[currThread].location);
-								gui.df[currThread].complete = 1;
+								futils.delete(files[fileid],gui.df[currThread].getLocation());
+								gui.df[currThread].setComplete(1);
 								}
 			   						
 						   } catch (IOException e) {
@@ -1093,10 +1108,10 @@ public class DownloadManager {
 						   
 				   }
 				   else if(gui.df[currThread].getPause()) {
-						   gui.df[currThread].complete = 1;
+						   gui.df[currThread].setComplete(1);
 						   active=active-1;
 						   try {
-							   Thread.sleep(500);
+							   Thread.sleep(300);
 						   } catch (InterruptedException e) {
 							   e.printStackTrace();
 						   }
@@ -1120,7 +1135,7 @@ public class DownloadManager {
 		   }
 		   else if(typeof=="Torrent") {
 			   System.out.println("monitoring");
-			   while(gui.tr[currThread].complete == false){
+			   while(gui.tr[currThread].getComplete() == false){
 				   
 				   gui.updateStatus(currThread,false,typeof);
 				   try {
@@ -1190,7 +1205,7 @@ public class DownloadManager {
 		if(df.length!=0 && active!=0) {
 		double rateper = speedLimitNumber2/active;
 		for (int i=0;i<df.length;i++) {
-			if(df[i].complete==0) {
+			if(df[i].getComplete()==0) {
 			df[i].setRateLimit(rateper);
 			}
 			}

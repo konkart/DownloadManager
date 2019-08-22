@@ -9,17 +9,17 @@ public class SubDownload implements Runnable{
     long totalDownload = 0;
     int bytesRead = -1;
     public long startTime;
-	public String subDownloadId;
-	public String fileLoc;
-	public String location;
-	public long fileStartPos;
-	public long fileEndPos;
-	public long bytesDownloaded=0;
-	public long bytesDownloadedSession=0;
-	public byte Buffer[];
-	public boolean complete=false;
+	private String subDownloadId;
+	private String fileLoc;
+	private String location;
+	private long fileStartPos;
+	private long fileEndPos;
+	private long bytesDownloaded=0;
+	private long bytesDownloadedSession=0;
+	private byte Buffer[];
+	private boolean complete=false;
 	int downloadID;
-	public volatile double r = 0;
+	private volatile double r = 0;
 	private volatile boolean paused = false;
 	FileOutputStream outputStream = null;
 	private boolean isNotPartial=false;
@@ -80,22 +80,25 @@ public void run(){
 			InputStream inputStream =  uc.getInputStream();
 			Long ltest = 1000L;
 			byte[] buffer = Buffer;
-			Long oldtime =System.currentTimeMillis();
+			
 			long now;
 			long downed = 0L;
 			if(fileStartPos<=fileEndPos) {
+			
 			while(bytesDownloadedSession < (fileEndPos - fileStartPos) && paused==false){
-					
+				Long oldtime =System.currentTimeMillis();
 				while (paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
 		            	outputStream.write(buffer, 0, bytesRead);
 		            	bytesDownloaded += bytesRead;
 		            	bytesDownloadedSession = bytesDownloaded;
+		            	
 		            	//speed rate check and limit
-		            	if (r!=0 && downed>(r*1000) && ((now=System.currentTimeMillis())-oldtime)<ltest) {
-		            	Thread.sleep(ltest-(now-oldtime));
-		            	oldtime=System.currentTimeMillis();
-		            	downed=0;
+		            	if (r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)<ltest) {
+		            		Thread.sleep(ltest-(now-oldtime));
+		            		oldtime=System.currentTimeMillis();
+		            		downed=0;
 		            	}
+		            	
 		            	if(bytesRead>=0) {
 		            		downed=(long) (downed+bytesRead);
 		            	}
@@ -137,6 +140,18 @@ public void run(){
 	}
 	public void setIsNotPartial() {
 		isNotPartial=true;
+	}
+	public boolean getCompleted() {
+		return complete;
+	}
+	public boolean getFailed() {
+		return failed;
+	}
+	public String getSubDownloadId() {
+		return subDownloadId;
+	}
+	public long getBytesDownloaded() {
+		return bytesDownloaded;
 	}
 	
 }

@@ -7,19 +7,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DownloadFile implements Runnable{
-	public String fileLoc;     		//File URL 
+	private String fileLoc;     		//File URL 
 	public String FilePath;
-	public String location;		//location on disk
-	public long fileSize;	 	    //File Size
-	public long bytesDownloaded;	//Bytes Downloaded
-	public int totConnections;		//Total Connections
-	public int bufferSize;			//Buffer Size
-	public SubDownload sd[];		//Subdownloads array
-	public int downloadID;
-	public int complete;			//Completion flag
-	public int activeSubConn;		//Active SubConnections(Subdownloads)counter
-	public long startTime;
-	public boolean isPartial;		//Flag to check if webhost supports partial(multipart) download
+	private String location;		//location on disk
+	private long fileSize;	 	    //File Size
+	private long bytesDownloaded;	//Bytes Downloaded
+	private int totConnections;		//Total Connections
+	private int bufferSize;			//Buffer Size
+	private SubDownload sd[];		//Subdownloads array
+	private int downloadID;
+	private int complete;			//Completion flag
+	private int activeSubConn;		//Active SubConnections(Subdownloads)counter
+	private long startTime;
+	private boolean isPartial;		//Flag to check if webhost supports partial(multipart) download
 	int r=0;
 	
 	volatile double R=0;
@@ -44,8 +44,8 @@ public class DownloadFile implements Runnable{
 			return String.valueOf((bytesDownloaded/1024)/1024);
 		}
 		
-		public String getFileSize(){
-			return String.valueOf(fileSize);
+		public long getFileSize(){
+			return fileSize;
 		}
 		//calculates and returns the download speed
 		public String getDownloadSpeed(){ 
@@ -132,11 +132,11 @@ public class DownloadFile implements Runnable{
 		}
 		//check if a subdownload is completed
 		public boolean isSubDownComplete(int id){
-			return sd[id].complete;
+			return sd[id].getCompleted();
 		}
 		//checks if subdownload failed
 		public boolean isSubDownFailed(int id) {
-			return sd[id].failed;
+			return sd[id].getFailed();
 		}
 		//download progress calc
 		public int DownloadProgress(){
@@ -149,23 +149,30 @@ public class DownloadFile implements Runnable{
 		
 		//get Sub download ID
 		public String getSubDownId(int id){
-			return sd[id].subDownloadId;
+			return sd[id].getSubDownloadId();
 		}
 		
 		//downloaded bytes calculation
 		public void calcBytesDownloaded(){
 			bytesDownloaded=0;	
 				for (int conn=0;conn<totConnections;conn++){
-					bytesDownloaded=bytesDownloaded + sd[conn].bytesDownloaded;
+					bytesDownloaded=bytesDownloaded + sd[conn].getBytesDownloaded();
 				}
 		}
 		//rate limits all Sub Download
 		public void setRateLimit(double rateper) {
 			R = rateper;
+			boolean done = false;
 			double r = rateper/totConnections;
-			for (int conn=0;conn<totConnections;conn++){
-				sd[conn].RateLimit(r);
-			}	
+			while(done==false) {
+				try {
+					for (int conn=0;conn<totConnections;conn++){
+						sd[conn].RateLimit(r);
+					}
+					done=true;
+				}catch(Exception e) {}
+			}
+			
 		}
 		
 		//pauses Sub Downloads
@@ -187,6 +194,49 @@ public class DownloadFile implements Runnable{
 			return p;	
 		}
 		
+		// method to check if download is complete
+		public boolean isDownloadComplete() {
+			boolean downloadcomplete = true;
+			for(int subDown = 0; subDown < activeSubConn ; subDown ++){
+				if(isSubDownComplete(subDown) == false){
+					downloadcomplete = false; //Download Incomplete
+					break;
+				}
+			}
+			return downloadcomplete;
+		}
+		
+		// method to check if download is failed
+		public boolean isDownloadFailed() {
+			boolean failed = false;
+			for(int subDown = 0; subDown < activeSubConn ; subDown ++){
+				   if(isSubDownFailed(subDown) == true){
+					   failed = true; //Download Failed
+					   break;
+				   }
+			   }
+			return failed;
+		}
+		
+		public int getComplete() {
+			return complete;
+		}
+		public void setComplete(int x) {
+			this.complete = x;
+		}
+		
+		public int getActiveSubConn() {
+			return activeSubConn;
+		}
+		
+		public int getTotConnections() {
+			return totConnections;
+		}
+		
+		public String getLocation() {
+			return location;
+		}
+		
 		public void run(){
 			if ( fileSize > 0 ) {
 				try {
@@ -195,5 +245,6 @@ public class DownloadFile implements Runnable{
 						e.printStackTrace();
 					}
 			}
-		}		
+		}
+				
 }
