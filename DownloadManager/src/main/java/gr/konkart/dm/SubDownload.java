@@ -98,7 +98,10 @@ public void run(){
 		            		oldtime=System.currentTimeMillis();
 		            		downed=0;
 		            	}
-		            	
+		            	if(r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)>ltest) {
+		            		oldtime = System.currentTimeMillis();
+		            		downed = 0;
+		            	}
 		            	if(bytesRead>=0) {
 		            		downed=(long) (downed+bytesRead);
 		            	}
@@ -136,7 +139,6 @@ public void run(){
 	}
 	public void RateLimit(double r2) {
 		this.r = r2;
-		
 	}
 	public void setIsNotPartial() {
 		isNotPartial=true;

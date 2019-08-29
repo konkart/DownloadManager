@@ -1,13 +1,11 @@
 package gr.konkart.dm;
 
 import java.io.File;
-import java.text.NumberFormat;
 import java.time.Duration;
 import bt.Bt;
 import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTModule;
-import bt.protocol.crypto.EncryptionPolicy;
 import java.nio.file.*;
 import bt.dht.*;
 import bt.runtime.BtClient;
@@ -24,12 +22,14 @@ public class Torrent implements Runnable{
 	private boolean complete; //Completion flag
 	private int downloadId; //Download ID
 	private String location;
+	private String folderName;
 	private boolean stopped = false;
-	public Torrent(String fileLoc,int downloadID,String location){//Torrent constructor
+	public Torrent(String fileLoc,int downloadID,String nameFolder,String location){//Torrent constructor
 		this.fileLoc = fileLoc;
 		this.downloadId = downloadID;
 		this.complete = false;
 		this.location = location;
+		this.folderName = nameFolder;
 		}
 	volatile boolean paused=false; //Paused Flag
 	private long downloaded;//Downloaded Bytes
@@ -49,14 +49,15 @@ public class Torrent implements Runnable{
 		        return Runtime.getRuntime().availableProcessors() * 4;
 		    }
 		};
+		
 		Duration dur = Duration.ofSeconds(60);
 		config.setPeerConnectionTimeout(dur);
 		config.setPeerConnectionRetryCount(1);
 		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
-		config.setEncryptionPolicy(EncryptionPolicy.REQUIRE_ENCRYPTED);
 		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));
 		config.setMaxPeerConnections(100);
 		config.setNumberOfPeersToRequestFromTracker(30);
+		
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
 		    @Override
 		    public boolean shouldUseRouterBootstrap() {
@@ -65,7 +66,7 @@ public class Torrent implements Runnable{
 		});
 
 		// get download directory
-		Path targetDirectory = new File(location).toPath();
+		Path targetDirectory = new File(location+folderName+"\\").toPath();
 
 		// create file system based backend for torrent data
 		Storage storage = new FileSystemStorage(targetDirectory);
@@ -81,6 +82,7 @@ public class Torrent implements Runnable{
 		        .module(dhtModule)
 		        .selector(selector)
 		        .build();
+		
 		startTime = System.currentTimeMillis();
 		//start client with callback every 1000ms
 		client.startAsync(state -> {
@@ -99,6 +101,9 @@ public class Torrent implements Runnable{
 		    }
 		  //get downloaded bytes
 		    downloaded=state.getDownloaded();
+		    if (downloaded == 0) {
+		    	startTime = System.currentTimeMillis();
+		    }
 		}, 1000).join();
 		}
 	//get downloaded data in Megabytes
@@ -116,14 +121,12 @@ public class Torrent implements Runnable{
 		else {
 		current_speed = 0;
 		}
-		NumberFormat formatter = NumberFormat.getNumberInstance() ;
-		formatter.setMaximumFractionDigits(2);
 		if (current_speed>1000) {
 			current_speed=current_speed/1000;
-			return " "+formatter.format(current_speed)+" MB/s ";
+			return " "+String.format("%.3f",current_speed)+" MB/s ";
 		}
 		else {
-			return " "+formatter.format(current_speed)+" KB/s ";
+			return " "+String.format("%.0f",current_speed)+" KB/s ";
 		}
 	}
 

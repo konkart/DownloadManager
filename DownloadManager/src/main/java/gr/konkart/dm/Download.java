@@ -6,14 +6,14 @@ import java.text.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class DownloadFile implements Runnable{
+public class Download implements Runnable{
 	private String fileLoc;     		//File URL 
 	public String FilePath;
 	private String location;		//location on disk
 	private long fileSize;	 	    //File Size
 	private long bytesDownloaded;	//Bytes Downloaded
 	private int totConnections;		//Total Connections
-	private int bufferSize;			//Buffer Size
+	private int bufferSize = 2024;			//Buffer Size
 	private SubDownload sd[];		//Subdownloads array
 	private int downloadID;
 	private int complete;			//Completion flag
@@ -21,14 +21,14 @@ public class DownloadFile implements Runnable{
 	private long startTime;
 	private boolean isPartial;		//Flag to check if webhost supports partial(multipart) download
 	int r=0;
-	
-	volatile double R=0;
+	private String[] files;
+	private FileUtils futils = new FileUtils();
 	public URL url;
+	
 	ExecutorService pool = Executors.newCachedThreadPool();
-	public DownloadFile(int downloadID,String fileLoc,int totConnections,int bufferSize,String location){
+	public Download(int downloadID,String fileLoc,int totConnections,String location){
 		this.fileLoc = fileLoc;
 		this.totConnections = totConnections;
-		this.bufferSize = bufferSize;
 		this.downloadID = downloadID;
 		this.location = location;
 		activeSubConn=0;
@@ -59,14 +59,12 @@ public class DownloadFile implements Runnable{
 			current_speed = 0;
 			}
 			
-			NumberFormat formatter = NumberFormat.getNumberInstance();
-			formatter.setMaximumFractionDigits(2);
 			if (current_speed>1000) {
 				current_speed=current_speed/1000;
-				return " "+formatter.format(current_speed)+" MB/s ";
+				return " "+String.format("%.3f",current_speed)+" MB/s ";
 			}
 			else {
-				return " "+formatter.format(current_speed)+" KB/s ";
+				return " "+String.format("%.0f",current_speed)+" KB/s ";
 			}
 			
 		}
@@ -82,6 +80,9 @@ public class DownloadFile implements Runnable{
 			if (isPartial==true) {
 				//Multipart Download initialization
 				sd = new SubDownload[totConnections];
+				
+				files =  new String[totConnections];
+				
 				//Dividing the file size to get size for each sub part
 				partsize= (long)(fileSize/totConnections);
 
@@ -102,6 +103,7 @@ public class DownloadFile implements Runnable{
 					partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
 					//Subdownload creation
 					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location);
+					files[conn] = sd[conn].getSubDownloadId();
 					startTime=System.currentTimeMillis();
 					pool.execute(sd[conn]);
 							
@@ -114,7 +116,7 @@ public class DownloadFile implements Runnable{
 				//Single part download initialization
 				totConnections = 1;
 				sd = new SubDownload[totConnections];
-					
+				files =  new String[totConnections];
 				conn=0;
 				partsize= fileSize;
 				fStartPos = 0;
@@ -124,7 +126,7 @@ public class DownloadFile implements Runnable{
 				startTime=System.currentTimeMillis();
 				sd[0].setIsNotPartial();
 				pool.execute(sd[0]);
-					
+				files[conn] = sd[conn].getSubDownloadId();
 				activeSubConn = activeSubConn + 1;
 				}
 			pool.shutdown();
@@ -147,11 +149,6 @@ public class DownloadFile implements Runnable{
 			return pcount;
 		}
 		
-		//get Sub download ID
-		public String getSubDownId(int id){
-			return sd[id].getSubDownloadId();
-		}
-		
 		//downloaded bytes calculation
 		public void calcBytesDownloaded(){
 			bytesDownloaded=0;	
@@ -161,20 +158,43 @@ public class DownloadFile implements Runnable{
 		}
 		//rate limits all Sub Download
 		public void setRateLimit(double rateper) {
-			R = rateper;
-			boolean done = false;
 			double r = rateper/totConnections;
-			while(done==false) {
+			long time = System.currentTimeMillis();
+			while((System.currentTimeMillis()-time)<600) {
 				try {
 					for (int conn=0;conn<totConnections;conn++){
 						sd[conn].RateLimit(r);
 					}
-					done=true;
-				}catch(Exception e) {}
+					break;
+				} catch(Exception e) {
+					//e.printStackTrace();
+				}
 			}
 			
 		}
 		
+		
+		public void concatSub() {
+			   try {
+				   futils.concat(files,FilePath,location);
+				   complete = 1;
+			   } catch(Exception e){}
+			   deleteSubFiles();
+		}
+		
+		//deletes the uneeded files
+		public void deleteSubFiles() {
+			if (pool.isTerminated()) {
+				for(int fileid=0;fileid < totConnections;fileid++) {
+					try {
+						futils.delete(files[fileid],location);
+						System.out.println("ok");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
 		//pauses Sub Downloads
 		public void PauseDownload() {
 			for (int i=0;i<sd.length;i++) {
@@ -184,12 +204,16 @@ public class DownloadFile implements Runnable{
 		//checks if SubDownloads are paused
 		public boolean getPause() {
 			boolean p = true;
-			for (int i=0;i<sd.length;i++) {
+			try {
+				for (int i=0;i<sd.length;i++) {
 				if(sd[i].getPause()==false && !pool.isTerminated()) {
 					p = false;
 					
 					break;
 				}
+				}
+			}catch(Exception e) {
+				p = true;
 			}
 			return p;	
 		}
@@ -202,6 +226,12 @@ public class DownloadFile implements Runnable{
 					downloadcomplete = false; //Download Incomplete
 					break;
 				}
+			}
+			if (downloadcomplete == true){
+				complete = 1;
+			}
+			else {
+				complete = 0;
 			}
 			return downloadcomplete;
 		}
@@ -233,8 +263,8 @@ public class DownloadFile implements Runnable{
 			return totConnections;
 		}
 		
-		public String getLocation() {
-			return location;
+		public void setLocation(String location) {
+			this.location = location;
 		}
 		
 		public void run(){
@@ -245,6 +275,5 @@ public class DownloadFile implements Runnable{
 						e.printStackTrace();
 					}
 			}
-		}
-				
+		}		
 }

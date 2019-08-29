@@ -14,7 +14,7 @@ public class URLHandler {
 		Pattern t = Pattern.compile(MAGNET_REGEX);
 		Matcher mag = t.matcher(u);
 		Matcher m = p.matcher(u);
-		if(m.find()) {
+		if(m.find() && u.contains("magnet:?")==false) {
 		    isit="URL";
 		}
 		else if (mag.find()){isit="Torrent";}
@@ -47,7 +47,12 @@ public class URLHandler {
 				String ext = con.getContentType();
 				ext = ext.substring(ext.lastIndexOf('/')+1);
 				if(!ext.equals("null") && !fileName.contains('.'+ext)) {
-						nameOfTheFile = fileName+'.'+ext;
+						if (fileName.contains("jpg")) {
+							nameOfTheFile = fileName;
+						}
+						else{
+							nameOfTheFile = fileName+'.'+ext;
+						}
 				}
 				else {
 					nameOfTheFile = fileName;
