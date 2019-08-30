@@ -3,11 +3,9 @@ package gr.konkart.dm;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -113,15 +111,14 @@ public class FileUtils{
   	public void videoConv(String n , String t) {
   		//File ffmpeg = new File("ffmpeg.exe");
   		String keepName[] = n.split("\\.");
-  		pause();
   		System.out.println(n + keepName.length);
   		String nameOfFile = keepName[0];
-  		File outputFile = new File(keepName+"."+t);
-  		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -crf 14 -speed fast -threads 4 "+nameOfFile+"."+t};
+  		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
+  		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
   		//executes cmd command and reads the output
   		Runnable task = () -> {
+  			int erCode = 0;
   			try {
-  		
   				Process process2=Runtime.getRuntime().exec(command);
   				InputStream in = process2.getErrorStream();
   				int c;
@@ -130,9 +127,17 @@ public class FileUtils{
   				    System.out.print((char)c);
   				}
   				in.close();
-
-  				
-  				
+  				erCode = process2.waitFor();
+  				if (erCode!=0) {
+  					process2=Runtime.getRuntime().exec(commandFallback);
+  	  				in = process2.getErrorStream();
+  	  				while ((c = in.read()) != -1)
+  	  				{
+  	  				    System.out.print((char)c);
+  	  				}
+  	  				in.close();
+  	  				erCode = process2.waitFor();
+  				}
 		  		}
   			 	catch (FileNotFoundException e1) {
   					System.out.println("e1");
@@ -143,7 +148,12 @@ public class FileUtils{
   				finally {
   					JFrame frame = new JFrame();
   					frame.setAlwaysOnTop( true );
-  					JOptionPane.showMessageDialog(frame, "File conversion complete!");
+  					if (erCode==0) {
+  						JOptionPane.showMessageDialog(frame, "File conversion complete!");
+  					}
+  					else {
+  						JOptionPane.showMessageDialog(frame, "File conversion failed.");
+  					}
   					frame.toFront();
   					frame.setAlwaysOnTop( true );
   				}
@@ -154,13 +164,13 @@ public class FileUtils{
   	//audio conversion using ffmpeg
   	public void audioConv(String n , String t) {
   		String keepName[] = n.split("\\.");
-  		pause();
   		System.out.println(n + keepName.length);
   		String nameOfFile = keepName[0];
-  		File outputFile = new File(keepName+"."+t);
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
+  		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
   		//executes cmd command and reads the output
   		Runnable task = () -> {
+  			int erCode = 0;
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);
@@ -171,18 +181,31 @@ public class FileUtils{
   				    System.out.print((char)c);
   				}
   				in.close();
-
-  				
-  				
-		  		}catch (FileNotFoundException e1) {
+  				erCode = process2.waitFor();
+  				if (erCode!=0) {
+  					process2=Runtime.getRuntime().exec(commandFallback);
+  	  				in = process2.getErrorStream();
+  	  				while ((c = in.read()) != -1)
+  	  				{
+  	  				    System.out.print((char)c);
+  	  				}
+  	  				in.close();
+  	  				erCode = process2.waitFor();
+  				}
+  			}catch (FileNotFoundException e1) {
   					System.out.println("e1");
-  			 	}catch(Exception Io) {
+  			}catch(Exception Io) {
 		  			System.out.println(Io);
-		  		}
-  				finally {
-					JFrame frame = new JFrame();
-					frame.setAlwaysOnTop( true );
-					JOptionPane.showMessageDialog(frame, "File conversion complete!");
+		  	}
+  			finally {
+  				JFrame frame = new JFrame();
+  				frame.setAlwaysOnTop( true );
+  					if (erCode==0) {
+						JOptionPane.showMessageDialog(frame, "File conversion complete!");
+					} 
+					else {
+						JOptionPane.showMessageDialog(frame, "File conversion failed.");
+					}
 					frame.toFront();
 					frame.setAlwaysOnTop( true );
 				}
@@ -190,17 +213,5 @@ public class FileUtils{
   		Thread thread = new Thread(task);                                                
   		thread.start(); 
   	}
-  	
-  	//a simple method that will pause for 1 second
-  	static void pause(){
-  	    long Time0 = System.currentTimeMillis();
-  	    long Time1;
-  	    long runTime = 0;
-  	    while(runTime<1000){
-  	        Time1 = System.currentTimeMillis();
-  	        runTime = Time1 - Time0;
-  	    }
-  	}
-
 }
 

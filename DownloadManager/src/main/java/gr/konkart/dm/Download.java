@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 
 public class Download implements Runnable{
 	private String fileLoc;     		//File URL 
-	public String FilePath;
+	public String fileName;
 	private String location;		//location on disk
 	private long fileSize;	 	    //File Size
 	private long bytesDownloaded;	//Bytes Downloaded
@@ -36,7 +36,7 @@ public class Download implements Runnable{
 			url = new URL(this.fileLoc);
 			URLConnection uc = url.openConnection();
 			fileSize = uc.getContentLength();
-			FilePath = URLHandler.getFilename(url.toString());
+			fileName = URLHandler.getFilename(url.toString());
 			isPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
 			}catch(Exception e){}
 		};
@@ -176,7 +176,7 @@ public class Download implements Runnable{
 		
 		public void concatSub() {
 			   try {
-				   futils.concat(files,FilePath,location);
+				   futils.concat(files,fileName,location);
 				   complete = 1;
 			   } catch(Exception e){}
 			   deleteSubFiles();
