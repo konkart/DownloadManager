@@ -41,23 +41,14 @@ public class FileUtils{
 	    out.close();
 		System.out.println("concat complete");
 	}
-
-
-
-	//deletes the file
-	public void delete(String filename,String location) throws IOException {
-		String name=filename;
-		File f = new File(location+name);
-		f.delete();
-  	}
   	
-  	//method to delete a folder and all its content
-	public void deleteDir(File file) {
+  	//method to delete files or a folder and all its content
+	public void deleteFiles(File file) {
 		File[] contents = file.listFiles();
 		if (contents!=null) {
 			for (File f : contents) {
 				if (Files.isSymbolicLink(f.toPath())==false) {
-					deleteDir(f);
+					deleteFiles(f);
 				}
 			}
 		}

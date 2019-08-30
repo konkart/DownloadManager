@@ -692,14 +692,10 @@ public class DownloadManager {
 			        location = table_1.getModel().getValueAt(row, 6).toString();
 					File filetoDelete= new File(location+file);
 					if(filetoDelete.exists()) {
-						try {
-							FileUtils de = new FileUtils();
-							de.delete(file,location);
-							table_1.getModel().setValueAt("Deleted",row, 3);
-							table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
+						FileUtils de = new FileUtils();
+						de.deleteFiles(filetoDelete);
+						table_1.getModel().setValueAt("Deleted",row, 3);
+						table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
 			        }
 					else {
 						df[Integer.parseInt(value)].PauseDownload();
@@ -724,7 +720,7 @@ public class DownloadManager {
 					if(foldertoDelete.exists()) {
 						FileUtils futil = new FileUtils();
 						System.out.println(value+" "+foldertoDelete.getParent());
-						futil.deleteDir(foldertoDelete);
+						futil.deleteFiles(foldertoDelete);
 						table_2.getModel().setValueAt("Deleted", row, 3);
 						table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
 			        }
@@ -768,7 +764,7 @@ public class DownloadManager {
 						try {
 							FileUtils futils = new FileUtils();
 							futils.moveDir(foldertoMove, new File(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file));
-							futils.deleteDir(foldertoMove);
+							futils.deleteFiles(foldertoMove);
 							table_2.getModel().setValueAt(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file+"\\",row,6);
 						} catch (IOException e1) {
 							e1.printStackTrace();

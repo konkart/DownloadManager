@@ -1,8 +1,8 @@
 package gr.konkart.dm;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.text.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -186,12 +186,8 @@ public class Download implements Runnable{
 		public void deleteSubFiles() {
 			if (pool.isTerminated()) {
 				for(int fileid=0;fileid < totConnections;fileid++) {
-					try {
-						futils.delete(files[fileid],location);
-						System.out.println("ok");
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+					futils.deleteFiles(new File(location+files[fileid]));
+					System.out.println("ok");
 				}
 			}
 		}
