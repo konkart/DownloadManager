@@ -102,7 +102,7 @@ public class Download implements Runnable{
 					//part name and temporary extension
 					partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
 					//Subdownload creation
-					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location);
+					sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location,true);
 					files[conn] = sd[conn].getSubDownloadId();
 					startTime=System.currentTimeMillis();
 					pool.execute(sd[conn]);
@@ -121,8 +121,8 @@ public class Download implements Runnable{
 				partsize= fileSize;
 				fStartPos = 0;
 				fEndPos= fileSize;
-				partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
-				sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID,location);
+				partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + "single.dat";
+				sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID,location,false);
 				startTime=System.currentTimeMillis();
 				sd[0].setIsNotPartial();
 				pool.execute(sd[0]);

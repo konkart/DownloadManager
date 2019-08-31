@@ -22,9 +22,9 @@ public class SubDownload implements Runnable{
 	private volatile double r = 0;
 	private volatile boolean paused = false;
 	FileOutputStream outputStream = null;
-	private boolean isNotPartial=false;
+	private boolean isPartial=false;
 	boolean failed = false;
-public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location){
+public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){
 
 		this.fileLoc=fileLoc;//URL to file
 		this.fileStartPos=fileStartPos;//start byte of the "to-download" range
@@ -34,6 +34,7 @@ public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fi
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
 		complete=false;
+		this.isPartial=partial;
 		}
 
 public int SubDownloadStart(){ return 1;}
@@ -49,10 +50,10 @@ public void run(){
 			
 			//partial file save location
 			File f = new File(location+subDownloadId);
+			//if a non-partial download has been previously stopped, it will instead start over when it is to be resumed
+			if(isPartial==true) {
 			//if file exists already it reads its size in bytes and adds it to the initial number-byte to start download from
-			if (f.exists()) {
-				/*if a non-partial download has been previously stopped, it will instead start over when it is to be resumed*/
-				if(isNotPartial==false) {
+				if (f.exists()) {
 					bytesDownloaded = f.length();
 					fileStartPos=fileStartPos+f.length();
 					
@@ -64,18 +65,10 @@ public void run(){
 					outputStream = new FileOutputStream(f,true);
 				}
 				else {
-					
 					uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
 					outputStream = new FileOutputStream(f);
-					
 				}
-				}
-			
-			//else if file not exists the start and end of the bytes to be downloaded are not changed
-			else {
-				uc.setRequestProperty("Range","bytes=" + fileStartPos + "-"+ fileEndPos);
-				outputStream = new FileOutputStream(f);
-				}
+			}
 			//gets the bytes stream
 			InputStream inputStream =  uc.getInputStream();
 			Long ltest = 1000L;
@@ -141,7 +134,7 @@ public void run(){
 		this.r = r2;
 	}
 	public void setIsNotPartial() {
-		isNotPartial=true;
+		isPartial=true;
 	}
 	public boolean getCompleted() {
 		return complete;

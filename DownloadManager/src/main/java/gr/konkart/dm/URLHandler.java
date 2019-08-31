@@ -46,7 +46,7 @@ public class URLHandler {
 				String fileName = urlPath.substring(urlPath.lastIndexOf('/')+1).trim();
 				String ext = con.getContentType();
 				ext = ext.substring(ext.lastIndexOf('/')+1);
-				if(!ext.equals("null") && !fileName.contains('.'+ext)) {
+				if(!ext.equals(null) && !fileName.contains('.'+ext)) {
 						if (fileName.contains("jpg")) {
 							nameOfTheFile = fileName;
 						}
