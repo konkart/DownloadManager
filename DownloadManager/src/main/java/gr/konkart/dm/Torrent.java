@@ -90,22 +90,21 @@ public class Torrent implements Runnable{
 			piece = state.getPiecesComplete();
 			perce = (piece*100)/(total);
 			//if no pieces remaining stop client and flag as completed
-		    if (state.getPiecesRemaining() == 0) {
-		        client.stop();
-		        complete = true;
-		        stopped = true;
-		    }
-		    else if(paused==true) {
+			if (state.getPiecesRemaining() == 0) {
+				client.stop();
+				complete = true;
+				stopped = true;
+		    } else if(paused==true) {
 		    	client.stop();
 		    	stopped = true;
 		    }
-		  //get downloaded bytes
-		    downloaded=state.getDownloaded();
-		    if (downloaded == 0) {
-		    	startTime = System.currentTimeMillis();
-		    }
+			//get downloaded bytes
+			downloaded=state.getDownloaded();
+			if (downloaded == 0) {
+				startTime = System.currentTimeMillis();
+			}
 		}, 1000).join();
-		}
+	}
 	//get downloaded data in Megabytes
 	public long getDownloaded() {
 		return (downloaded/1024)/1024;
@@ -117,15 +116,13 @@ public class Torrent implements Runnable{
 		if (downloadedS > 0 ) {
 		current_speed = (float)( downloadedS / (System.currentTimeMillis() - startTime));
 		downloadedS=0;
-		}
-		else {
+		} else {
 		current_speed = 0;
 		}
 		if (current_speed>1000) {
 			current_speed=current_speed/1000;
 			return " "+String.format("%.3f",current_speed)+" MB/s ";
-		}
-		else {
+		} else {
 			return " "+String.format("%.0f",current_speed)+" KB/s ";
 		}
 	}
@@ -138,8 +135,7 @@ public class Torrent implements Runnable{
 		if (perce!=0) {
 		
 		return perce;
-		}
-		else {
+		} else {
 			perce = p;
 			return perce;
 		}
@@ -156,6 +152,9 @@ public class Torrent implements Runnable{
 	}
 	public boolean getPaused() {
 		return paused;
+	}
+	public String getFolderName() {
+		return folderName;
 	}
 	
 }

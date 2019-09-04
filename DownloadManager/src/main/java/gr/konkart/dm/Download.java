@@ -26,17 +26,17 @@ public class Download implements Runnable{
 	public URL url;
 	
 	ExecutorService pool = Executors.newCachedThreadPool();
-	public Download(int downloadID,String fileLoc,int totConnections,String location){
+	public Download(int downloadID,String fileLoc,String filename,int totConnections,String location){
 		this.fileLoc = fileLoc;
 		this.totConnections = totConnections;
 		this.downloadID = downloadID;
 		this.location = location;
+		this.fileName = filename; 
 		activeSubConn=0;
 			try{
 			url = new URL(this.fileLoc);
 			URLConnection uc = url.openConnection();
 			fileSize = uc.getContentLength();
-			fileName = URLHandler.getFilename(url.toString());
 			isPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
 			}catch(Exception e){}
 		};
@@ -54,16 +54,14 @@ public class Download implements Runnable{
 
 			if (bytesDownloaded > 0 ) {
 			current_speed = (float)( bytesDownloaded / (System.currentTimeMillis() - startTime));
-			}
-			else {
+			} else {
 			current_speed = 0;
 			}
 			
 			if (current_speed>1000) {
 				current_speed=current_speed/1000;
 				return " "+String.format("%.3f",current_speed)+" MB/s ";
-			}
-			else {
+			} else {
 				return " "+String.format("%.0f",current_speed)+" KB/s ";
 			}
 			
@@ -111,8 +109,7 @@ public class Download implements Runnable{
 				}
 
 				
-			}
-			else {
+			} else {
 				//Single part download initialization
 				totConnections = 1;
 				sd = new SubDownload[totConnections];
@@ -160,7 +157,7 @@ public class Download implements Runnable{
 		public void setRateLimit(double rateper) {
 			double r = rateper/totConnections;
 			long time = System.currentTimeMillis();
-			while((System.currentTimeMillis()-time)<600) {
+			while ((System.currentTimeMillis()-time)<600) {
 				try {
 					for (int conn=0;conn<totConnections;conn++){
 						sd[conn].RateLimit(r);
@@ -225,8 +222,7 @@ public class Download implements Runnable{
 			}
 			if (downloadcomplete == true){
 				complete = 1;
-			}
-			else {
+			} else {
 				complete = 0;
 			}
 			return downloadcomplete;
@@ -266,10 +262,10 @@ public class Download implements Runnable{
 		public void run(){
 			if ( fileSize > 0 ) {
 				try {
-						StartDownload();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+					StartDownload();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-		}		
+		}
 }

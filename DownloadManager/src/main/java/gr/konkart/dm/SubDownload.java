@@ -24,7 +24,7 @@ public class SubDownload implements Runnable{
 	FileOutputStream outputStream = null;
 	private boolean isPartial=false;
 	boolean failed = false;
-public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){
+	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){
 
 		this.fileLoc=fileLoc;//URL to file
 		this.fileStartPos=fileStartPos;//start byte of the "to-download" range
@@ -37,9 +37,7 @@ public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fi
 		this.isPartial=partial;
 		}
 
-public int SubDownloadStart(){ return 1;}
-
-public void run(){
+	public void run(){
 	
 		try{
 			
@@ -63,8 +61,7 @@ public void run(){
 					}
 					uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
 					outputStream = new FileOutputStream(f,true);
-				}
-				else {
+				} else {
 					uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
 					outputStream = new FileOutputStream(f);
 				}
