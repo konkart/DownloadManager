@@ -1,3 +1,8 @@
+/* 
+SOURCE USED SHOULD CARRY AUTHOR CREDITS
+ORIGINAL AUTHOR:MAHESH KAREKAR
+AUTHOR:KONSTANTINOS KARTOFIS
+*/
 package gr.konkart.dm;
 
 import java.net.*;
@@ -24,6 +29,9 @@ public class SubDownload implements Runnable{
 	FileOutputStream outputStream = null;
 	private boolean isPartial=false;
 	boolean failed = false;
+	Long oldtime;
+	long now;
+	long downed = 0L;
 	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){
 
 		this.fileLoc=fileLoc;//URL to file
@@ -48,7 +56,13 @@ public class SubDownload implements Runnable{
 			
 			//partial file save location
 			File f = new File(location+subDownloadId);
-			//if a non-partial download has been previously stopped, it will instead start over when it is to be resumed
+
+			
+			/*
+			 * if a non-partial download has been previously stopped, it will instead start over when it is to be resumed
+			 * 
+			 * @author KONSTANTINOS KARTOFIS
+			 */
 			if(isPartial==true) {
 			//if file exists already it reads its size in bytes and adds it to the initial number-byte to start download from
 				if (f.exists()) {
@@ -66,48 +80,32 @@ public class SubDownload implements Runnable{
 					outputStream = new FileOutputStream(f);
 				}
 			}
+
+			
+			
 			//gets the bytes stream
 			InputStream inputStream =  uc.getInputStream();
-			Long ltest = 1000L;
 			byte[] buffer = Buffer;
-			
-			long now;
-			long downed = 0L;
 			if(fileStartPos<=fileEndPos) {
 			
-			while(bytesDownloadedSession < (fileEndPos - fileStartPos) && paused==false){
-				Long oldtime =System.currentTimeMillis();
-				while (paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
-		            	outputStream.write(buffer, 0, bytesRead);
-		            	bytesDownloaded += bytesRead;
-		            	bytesDownloadedSession = bytesDownloaded;
-		            	
-		            	//speed rate check and limit
-		            	if (r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)<ltest) {
-		            		Thread.sleep(ltest-(now-oldtime));
-		            		oldtime=System.currentTimeMillis();
-		            		downed=0;
-		            	}
-		            	if(r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)>ltest) {
-		            		oldtime = System.currentTimeMillis();
-		            		downed = 0;
-		            	}
-		            	if(bytesRead>=0) {
-		            		downed=(long) (downed+bytesRead);
-		            	}
+				while(bytesDownloadedSession < (fileEndPos - fileStartPos) && paused==false){
+					oldtime =System.currentTimeMillis();
+					while (paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
+						outputStream.write(buffer, 0, bytesRead);
+						bytesDownloaded += bytesRead;
+						bytesDownloadedSession = bytesDownloaded;
+						speedLimitCheck();
 					} 
-				
-				
-			}
+				}
 			}
 			outputStream.close();
-	        inputStream.close();
-	        if(paused==false){
-	        complete=true;
+			inputStream.close();
+			if(paused==false){
+				complete=true;
 			}
 
 
-		}catch(Exception e){
+		} catch (Exception e){
 			paused=true;
 			complete=false;
 			failed=true;
@@ -119,19 +117,35 @@ public class SubDownload implements Runnable{
 		}
 
 		}
-
+	
+	/*
+	 * speedLimitCheck(),getPause(),setIsNotPartial(),
+	 * setPause(),RateLimit()
+	 * 
+	 * @author KONSTANTINOS KARTOFIS
+	 */
+	private void speedLimitCheck() throws InterruptedException {
+		if (r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)<1000L) {
+			Thread.sleep(1000L-(now-oldtime));
+			oldtime=System.currentTimeMillis();
+			downed=0;
+		}
+		if(r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)>1000L) {
+			oldtime = System.currentTimeMillis();
+			downed = 0;
+		}
+		if(bytesRead>=0) {
+			downed=(long) (downed+bytesRead);
+		}
+	}
 	public synchronized void setPause() {
 		paused = true;
-		
 	}
 	public synchronized boolean getPause() {
 		return paused;
 	}
 	public void RateLimit(double r2) {
 		this.r = r2;
-	}
-	public void setIsNotPartial() {
-		isPartial=true;
 	}
 	public boolean getCompleted() {
 		return complete;

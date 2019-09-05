@@ -16,7 +16,7 @@ public class FileUtils{
 	InputStream in = null;
 	RandomAccessFile raf;
 	
-	//concatenates the temporary files in order to create the final wanted file
+	// concatenates the temporary files in order to create the final wanted file
 	public void concat(String args[],String outPut,String location) throws IOException{
 		String outfile = outPut;
 		this.location = location;
@@ -37,7 +37,6 @@ public class FileUtils{
 	        in.close();
 	    }
 	    out.close();
-		System.out.println("concat complete");
 	}
   	
   	//method to delete files or a folder and all its content

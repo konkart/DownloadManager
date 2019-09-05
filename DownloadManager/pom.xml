@@ -3,22 +3,8 @@
   <groupId>DownloadManager</groupId>
   <artifactId>DownloadManager</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  	<repositories>
-  		<repository>
-			<id>maven-eclipse-repo</id>
-			<url>http://maven-eclipse.github.io/maven</url>
-		</repository>
-	</repositories>
 
-
-    
-	
    <dependencies>
-			<dependency>
-				<groupId>org.eclipse.swt</groupId>
-				<artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
-				<version>4.6.1</version>
-			</dependency>
 		    <dependency>
 	    		<groupId>com.github.atomashpolskiy</groupId>
 	    		<artifactId>bt-core</artifactId>
@@ -30,41 +16,54 @@
 			    <version>1.8</version>
 			</dependency>
 			<dependency>
-			    <groupId>com.github.atomashpolskiy</groupId>
-			    <artifactId>bt-dht</artifactId>
-			    <version>1.8</version>
+				<groupId>com.github.atomashpolskiy</groupId>
+				<artifactId>bt-dht</artifactId>
+				<version>1.8</version>
 			</dependency>
 			<dependency>
-		       <groupId>org.slf4j</groupId>
-		       <artifactId>slf4j-api</artifactId>
-		       <version>1.7.5</version>
-		   </dependency>
-		   <dependency>
-		       <groupId>org.slf4j</groupId>
-		       <artifactId>slf4j-log4j12</artifactId>
-		       <version>1.7.5</version>
-		   </dependency>
-  </dependencies>
-  <build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.3</version>
-            <configuration>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-log4j12</artifactId>
+				<version>1.7.5</version>
+			</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
+				<configuration>
             
-            	<archive>
-          			<manifest>
-            		<addClasspath>true</addClasspath>
-           			<classpathPrefix>lib/</classpathPrefix>
-            		<mainClass>gr.konkart.dm.DownloadManager</mainClass>
-          		</manifest>
-       		 	</archive>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<mainClass>gr.konkart.dm.DownloadManager</mainClass>
+						</manifest>
+					</archive>
        		 	
-                <source>1.8</source>
-                <target>1.8</target>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>1.15</version>
+				<executions>
+					<execution>
+						<id>download-licenses</id>
+						<goals>
+							<goal>download-licenses</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

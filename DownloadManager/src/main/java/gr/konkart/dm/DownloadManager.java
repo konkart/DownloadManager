@@ -86,7 +86,6 @@ public class DownloadManager {
 	static DownloadManager window;
 	private DefaultTableModel model;
 	private DefaultTableModel model2;
-	public int totalConnections = 5;
 	public boolean rateState=false;
 	JMenuItem pause;
 	JMenuItem resume;
@@ -261,7 +260,7 @@ public class DownloadManager {
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
 				/*-------OOOOO-------*/
-				Download download = new Download(downloadID,fileLoc,fileN,totalConnections,homeDefault);
+				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
 			    df.add(download);
 			    
 					//df[DownloadID].start();
@@ -450,7 +449,7 @@ public class DownloadManager {
     				model.addRow(item);
     				trayframe.modelTray.addRow(itemTray);
     				/*-------OOOOO-------*/
-    				Download download = new Download(downloadID,fileLoc,fileN,totalConnections,homeDefault);
+    				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
     			    df.add(download);
     			    dMonitor = new Monitor(window,downloadID,type);
     			    tmpID = downloadID;
@@ -1040,7 +1039,7 @@ public class DownloadManager {
 					  String fileN = table_1.getModel().getValueAt(row, 1).toString();
 					  try {
 						  if(df.get(Integer.parseInt(value)).getPause()==true || df.get(Integer.parseInt(value)).getComplete()==1) {
-						  Download download = new Download(Integer.parseInt(value),url,fileN,totalConnections,location);
+						  Download download = new Download(Integer.parseInt(value),url,fileN,location);
 						  df.set(Integer.parseInt(value),download);
 						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
 						  pool.execute(df.get(Integer.parseInt(value)));
@@ -1084,7 +1083,12 @@ public class DownloadManager {
         return dateFormat.format(date);
     }
 	
-	 // Monitor class monitors the activity of the download and does actions depending on that activity
+	 /*
+	  *  Monitor class monitors the activity of the download and does actions depending on that activity
+	  *  
+	  *  @author MAHESH KAREKAR
+	  *  @author KONSTANTINOS KARTOFIS
+	  */
 	class Monitor extends Thread{
 
 		DownloadManager gui;
