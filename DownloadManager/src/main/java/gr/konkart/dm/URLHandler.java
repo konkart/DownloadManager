@@ -1,5 +1,4 @@
 package gr.konkart.dm;
-
 import java.net.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -8,16 +7,19 @@ public class URLHandler {
 	public static String isUrl(String u) {
 		String isit = null;
 		
-		final String URL_REGEX = "^((https?|ftp)://|(www|ftp).)?[a-z0-9-]+(.[a-z0-9-]+)+([/?]*.*)*?$";				
+		try {
+			URL urlObj = new URL(u);
+			URLConnection con = urlObj.openConnection();
+			if(!con.getContentType().equals("content/unknown")) {
+				isit = "URL";
+			}
+		} catch (Exception e) {
+			isit=null;
+		}
 		final String MAGNET_REGEX= "^magnet:\\?xt=urn:btih:[a-zA-Z0-9]*.*";
-		Pattern p = Pattern.compile(URL_REGEX);
 		Pattern t = Pattern.compile(MAGNET_REGEX);
 		Matcher mag = t.matcher(u);
-		Matcher m = p.matcher(u);
-		if(m.find() && u.contains("magnet:?")==false) {
-		    isit="URL";
-		}
-		else if (mag.find()){isit="Torrent";}
+		if (mag.find()){isit="Torrent";}
 		return isit;
 	}
 	//gets the filename from the link(url)
@@ -46,11 +48,11 @@ public class URLHandler {
 				String fileName = urlPath.substring(urlPath.lastIndexOf('/')+1).trim();
 				String ext = con.getContentType();
 				ext = ext.substring(ext.lastIndexOf('/')+1);
-				if(!ext.equals(null) && !fileName.contains('.'+ext)) {
+				if(!ext.equals(null) && !fileName.contains('.'+ext) && !ext.equals("unknown")) {
 						if (fileName.contains("jpg")) {
 							nameOfTheFile = fileName;
 						}
-						else{
+						else {
 							nameOfTheFile = fileName+'.'+ext;
 						}
 				}

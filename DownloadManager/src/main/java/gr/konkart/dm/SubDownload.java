@@ -109,6 +109,7 @@ public class SubDownload implements Runnable{
 			paused=true;
 			complete=false;
 			failed=true;
+			e.printStackTrace();
 			try {
 				outputStream.close();
 			} catch (IOException e1) {
@@ -125,14 +126,12 @@ public class SubDownload implements Runnable{
 	 * @author KONSTANTINOS KARTOFIS
 	 */
 	private void speedLimitCheck() throws InterruptedException {
-		if (r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)<1000L) {
-			Thread.sleep(1000L-(now-oldtime));
+		if (r!=0 && downed>r) {
+			if ( ((now = System.currentTimeMillis()) - oldtime) <=1000L) {
+				Thread.sleep(1000L-(now-oldtime));
+			}
 			oldtime=System.currentTimeMillis();
 			downed=0;
-		}
-		if(r!=0 && downed>r && ((now=System.currentTimeMillis())-oldtime)>1000L) {
-			oldtime = System.currentTimeMillis();
-			downed = 0;
 		}
 		if(bytesRead>=0) {
 			downed=(long) (downed+bytesRead);

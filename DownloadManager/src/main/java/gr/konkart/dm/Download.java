@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 
 public class Download implements Runnable{
 	private String fileLoc;			//File URL
-	public String fileName;
 	private String location;		//location on disk
 	private long fileSize;			//File Size
 	private long bytesDownloaded;	//Bytes Downloaded
@@ -32,13 +31,14 @@ public class Download implements Runnable{
 	int conn=0;//liveConnections
 	long fStartPos,fEndPos,partsize;
 	String partname;
-	String nameofFile;
-	ExecutorService pool = Executors.newCachedThreadPool();
+	String nameOfFile;
 	public Download(int downloadID,String fileLoc,String filename,String location){
 		this.fileLoc = fileLoc;
 		this.downloadID = downloadID;
 		this.location = location;
-		this.fileName = filename; 
+		
+		this.nameOfFile = filename;
+
 		activeSubConn=0;
 		complete=0;
 			try{
@@ -47,7 +47,7 @@ public class Download implements Runnable{
 			fileSize = uc.getContentLength();
 			isPartial = uc.getHeaderField("Accept-Ranges").equals("bytes");
 			}catch(Exception e){}
-			nameofFile = URLHandler.getFilename(fileLoc);
+
 		};
 		public String getBytesDownloaded(){
 			return String.valueOf((bytesDownloaded/1024)/1024);
@@ -110,7 +110,7 @@ public class Download implements Runnable{
 					fEndPos= fStartPos + partsize - 1;
 				}
 				//part name and temporary extension
-				partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
+				partname = nameOfFile + String.valueOf(downloadID) + String.valueOf(conn) + ".dat";
 				//Subdownload creation
 				sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location,true);
 				files[conn] = sd[conn].getSubDownloadId();
@@ -155,6 +155,7 @@ public class Download implements Runnable{
 		 * 
 		 * @author KONSTANTINOS KARTOFIS
 		 */
+		ExecutorService pool = Executors.newCachedThreadPool();
 		//Single part download initialization
 		private void doSinglePart() {
 			totConnections = 1;
@@ -164,7 +165,7 @@ public class Download implements Runnable{
 			partsize= fileSize;
 			fStartPos = 0;
 			fEndPos= fileSize;
-			partname = nameofFile + String.valueOf(downloadID) + String.valueOf(conn) + "single.dat";
+			partname = nameOfFile + String.valueOf(downloadID) + String.valueOf(conn) + "single.dat";
 			sd[0] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize,downloadID,location,false);
 			startTime=System.currentTimeMillis();
 			pool.execute(sd[0]);
@@ -193,7 +194,7 @@ public class Download implements Runnable{
 		
 		public void concatSub() {
 			   try {
-				   futils.concat(files,fileName,location);
+				   futils.concat(files,nameOfFile,location);
 				   complete = 1;
 			   } catch(Exception e){}
 			   deleteSubFiles();

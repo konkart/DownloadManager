@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -111,6 +110,7 @@ public class DownloadManager {
 	JTabbedPane tabbedPane;
 	String homeDefault = System.getProperty("user.home")+"\\Downloads\\";
 	JComboBox<Object> speedCmb;
+	int trayFrameRow = 0;
 	volatile double speedLimitNumber=0;
 	volatile int active = 0;
 	int scheduled = 0;
@@ -250,28 +250,25 @@ public class DownloadManager {
 			String type;
 			if(URLHandler.isUrl(textField.getText())=="URL") {
 				type = "URL";
-				
 				fileLoc = textField.getText();
 				textField.setText("");
 				String fileN = URLHandler.getFilename(fileLoc);
 				String[] item={""+downloadID+"",fileN,"0%  0 KB/s","0",getDateTime(),fileLoc,homeDefault};
 				String[] itemTray={fileN,"0%"};
-
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
 				/*-------OOOOO-------*/
 				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
-			    df.add(download);
-			    
-					//df[DownloadID].start();
-					Monitor dMonitor = new Monitor(window,downloadID,type);
-					pool.execute(df.get(downloadID));
-					pool.execute(dMonitor);
-					downloadID = downloadID + 1;
-					active=active+1;
-					if (rateState==true) {
-						downloadSpeedLimit(speedLimitNumber);
-					}
+				df.add(download);
+				Monitor dMonitor = new Monitor(window,downloadID,type,trayFrameRow);
+				pool.execute(df.get(downloadID));
+				pool.execute(dMonitor);
+				downloadID = downloadID + 1;
+				active = active + 1;
+				trayFrameRow = trayFrameRow + 1;
+				if (rateState==true) {
+					downloadSpeedLimit(speedLimitNumber);
+				}
 				/*--------------*/
 			} else if (URLHandler.isUrl(textField.getText())=="Torrent") {
 				type="Torrent";
@@ -291,18 +288,18 @@ public class DownloadManager {
 				
 				model2.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
-				Monitor dMonitor = new Monitor(window,torrentID,type);
+				Monitor dMonitor = new Monitor(window,torrentID,type,trayFrameRow);
 				System.out.println(NameTo);
 				Torrent to = new Torrent(fileLoc,torrentID,NameTo,homeDefault);
 				tr.add(to);
 				
 				pool.execute(tr.get(torrentID));
 				pool.execute(dMonitor);
-				torrentID=torrentID+1;
+				torrentID = torrentID + 1;
+				trayFrameRow = trayFrameRow + 1;
 				
 			} else {
 				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
-				return;
 			}
 			btnDownload.setEnabled(true);	
 		  }
@@ -451,10 +448,11 @@ public class DownloadManager {
     				/*-------OOOOO-------*/
     				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
     			    df.add(download);
-    			    dMonitor = new Monitor(window,downloadID,type);
+    			    dMonitor = new Monitor(window,downloadID,type,trayFrameRow);
     			    tmpID = downloadID;
     			    downloadID = downloadID+1;
 					active=active+1;
+					trayFrameRow = trayFrameRow + 1;
     			    textField.setText("");
     			} else if (URLHandler.isUrl(textField.getText())=="Torrent") {
     				type="Torrent";
@@ -474,12 +472,13 @@ public class DownloadManager {
 
     				model.addRow(item);
     				trayframe.modelTray.addRow(itemTray);
-    				dMonitor = new Monitor(window,torrentID,type);
+    				dMonitor = new Monitor(window,torrentID,type,trayFrameRow);
     				System.out.println(NameTo);
     				Torrent to = new Torrent(fileLoc,torrentID,NameTo,homeDefault);
     				tr.add(to);
     				tmpID = torrentID;
     				torrentID = torrentID+1;
+    				trayFrameRow = trayFrameRow + 1;
     				textField.setText("");
     			} else {
     				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
@@ -562,10 +561,10 @@ public class DownloadManager {
 	class PopupListener extends MouseAdapter {
 		String file;
 		String progress;
-		String type = null ;
+		String type = null;
 		String percent;
 		String fileMIME[];
-		String filetype;
+		String filetype = "";
 		String location = homeDefault;
 		String value;
 		int row;
@@ -610,22 +609,22 @@ public class DownloadManager {
 					delete.setVisible(false);
 				}
 	    	}
-	        if (tabbedPane.getSelectedIndex()==0) {
+	    	if (tabbedPane.getSelectedIndex()==0) {
 	        	delete.setVisible(true);
 		        row = table_1.getSelectedRow();
 		        file = table_1.getModel().getValueAt(row, 1).toString();
 		        location = table_1.getModel().getValueAt(row, 6).toString();
 		        try {
 		        	Path source = Paths.get(location+file);
-			        if(source.toFile().exists()) {
+		        	if(source.toFile().exists()) {
 				        
-							fileMIME = Files.probeContentType(source).split("/");
-							filetype = fileMIME[0].toString();
-						
-			        }
+		        		fileMIME = Files.probeContentType(source).split("/");
+		        		filetype = fileMIME[0].toString();
+		        	}
 		        } catch (Exception e1) {
 		        	System.out.println("Exception FileMIME");
-				}
+		        	e1.printStackTrace();
+		        }
 		        
 				progress = table_1.getModel().getValueAt(row, 2).toString();
 				String status = table_1.getModel().getValueAt(row, 3).toString();
@@ -720,9 +719,10 @@ public class DownloadManager {
 					File filetoDelete= new File(location+file);
 					if(filetoDelete.exists()) {
 						FileUtils de = new FileUtils();
-						de.deleteFiles(filetoDelete);
-						table_1.getModel().setValueAt("Deleted",row, 3);
-						table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
+						if (de.deleteFiles(filetoDelete)) {
+							table_1.getModel().setValueAt("Deleted",row, 3);
+							table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
+						}
 			        } else {
 						df.get(Integer.parseInt(value)).PauseDownload();
 						while (df.get(Integer.parseInt(value)).pool.isTerminated()==false) {
@@ -764,7 +764,6 @@ public class DownloadManager {
 			        file = table_1.getModel().getValueAt(row, 1).toString();
 			        location = table_1.getModel().getValueAt(row, 6).toString();
 			        value = table_1.getModel().getValueAt(row, 0).toString();
-					File filetoMove = new File(location+file);
 					JFileChooser fchooser = new JFileChooser(new File(location));
 					fchooser.setAcceptAllFileFilterUsed(false);
 					fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -1041,7 +1040,7 @@ public class DownloadManager {
 						  if(df.get(Integer.parseInt(value)).getPause()==true || df.get(Integer.parseInt(value)).getComplete()==1) {
 						  Download download = new Download(Integer.parseInt(value),url,fileN,location);
 						  df.set(Integer.parseInt(value),download);
-						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type);
+						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,trayFrameRow);
 						  pool.execute(df.get(Integer.parseInt(value)));
 						  pool.execute(dMonitor);
 						  active=active+1;
@@ -1061,7 +1060,7 @@ public class DownloadManager {
     				  if(tr.get(Integer.parseInt(value)).getPaused()==true || tr.get(Integer.parseInt(value)).getComplete()==true) {
     				  Torrent to = new Torrent(magnet,Integer.parseInt(value),NameTo,Paths.get(location).getParent().toString()+"\\");
     				  tr.set(Integer.parseInt(value),to);
-    				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),"Torrent");
+    				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,trayFrameRow);
     				  pool.execute(tr.get(Integer.parseInt(value)));
     				  pool.execute(dMonitor);
     				  }
@@ -1094,10 +1093,12 @@ public class DownloadManager {
 		DownloadManager gui;
 		int threadIndex;
 		String typeof;
-		public Monitor(DownloadManager dm_frame,int idx,String type){
+		private int trayFrameRow;
+		public Monitor(DownloadManager dm_frame,int idx,String type,int trayFrameRow){
 			gui=dm_frame;
 			threadIndex = idx;
 		  	typeof = type;
+		  	this.trayFrameRow = trayFrameRow;
 		}
 
 		public void run(){
@@ -1113,7 +1114,7 @@ public class DownloadManager {
 			//gui.updateStatus(currThread);
 			if (gui.df.get(currThread).getFileSize() == -1){
 				JOptionPane.showMessageDialog(null,failMsg,"INFORMATION",JOptionPane.INFORMATION_MESSAGE);
-				gui.updateStatus(currThread,true,typeof);
+				gui.updateStatus(currThread,true,typeof,trayFrameRow);
 				failed=true;
 				gui.df.get(currThread).setComplete(-1);
 			} 			
@@ -1121,16 +1122,17 @@ public class DownloadManager {
 			while (gui.df.get(currThread).getComplete() == 0) {
 				dconnections = gui.df.get(currThread).getTotConnections();
 				if (gui.df.get(currThread).getComplete() == 0 && gui.df.get(currThread).getActiveSubConn() == dconnections ){
-					if(failCheck=true) {
+					if(failCheck==true) {
 						failed = gui.df.get(currThread).isDownloadFailed();
 						failCheck=false;
 						if(failed==true) {
-							gui.updateStatus(currThread,true,typeof);
+							gui.updateStatus(currThread,true,typeof,trayFrameRow);
 							JOptionPane.showMessageDialog(null,failMsg,"INFORMATION",JOptionPane.INFORMATION_MESSAGE);
 							break;
 						}
 					}
-					gui.updateStatus(currThread,false,typeof);
+					System.out.println(trayFrameRow);
+					gui.updateStatus(currThread,false,typeof,trayFrameRow);
 					downloadcomplete = gui.df.get(currThread).isDownloadComplete();//Flag
 					if (downloadcomplete == true) {
 						gui.df.get(currThread).concatSub();
@@ -1146,7 +1148,7 @@ public class DownloadManager {
 						}
 						break;
 					}
-					gui.updateStatus(currThread,false,typeof);
+					gui.updateStatus(currThread,false,typeof,trayFrameRow);
 					   
 				}
 				try {
@@ -1157,12 +1159,12 @@ public class DownloadManager {
 			}
 			if(failed==false) {
 				gui.model.setValueAt(String.valueOf(gui.df.get(currThread).DownloadProgress())+"%  0 KB/s",currThread,2);
-				DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(gui.df.get(currThread).DownloadProgress())+"%",currThread,1);
+				DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(gui.df.get(currThread).DownloadProgress())+"%",trayFrameRow,1);
 			}
 			} else if (typeof=="Torrent") {
 				System.out.println("monitoring");
 				while(gui.tr.get(currThread).getComplete() == false && gui.tr.get(currThread).getStopped()==false){
-					gui.updateStatus(currThread,false,typeof);
+					gui.updateStatus(currThread,false,typeof,trayFrameRow);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -1177,26 +1179,26 @@ public class DownloadManager {
 	}
 	
 	//updateStatus method updates our table data
-	public void updateStatus( int currThread, boolean dFailed,String type){
+	public void updateStatus( int currThread, boolean dFailed,String type,int trayR){
 		if (type=="URL"){
 			if (!dFailed){
 				this.model.setValueAt(String.valueOf(this.df.get(currThread).DownloadProgress())+"% "+this.df.get(currThread).getDownloadSpeed(),currThread,2);	
 		   		this.model.setValueAt(this.df.get(currThread).getBytesDownloaded()+"MB",currThread,3);
-		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df.get(currThread).DownloadProgress())+"%",currThread,1);
+		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.df.get(currThread).DownloadProgress())+"%",trayR,1);
 			} else {
 				this.model.setValueAt("Failed",currThread,2);
 		   		this.model.setValueAt("Failed",currThread,3);
-		   		DownloadManager.trayframe.modelTray.setValueAt("Failed",currThread,1);
+		   		DownloadManager.trayframe.modelTray.setValueAt("Failed",trayR,1);
 			}
 		} else if(type=="Torrent") {
 			if (!dFailed){
 				this.model2.setValueAt(String.valueOf(this.tr.get(currThread).getPerc())+"% "+this.tr.get(currThread).getDownloadSpeed(),currThread,2);	
 		   		this.model2.setValueAt(this.tr.get(currThread).getDownloaded()+"MB",currThread,3);
-		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.tr.get(currThread).getPerc())+"%",currThread,1);
+		   		DownloadManager.trayframe.modelTray.setValueAt(String.valueOf(this.tr.get(currThread).getPerc())+"%",trayR,1);
 			} else {
 				this.model2.setValueAt("Failed",currThread,2);
 		   		this.model2.setValueAt("Failed",currThread,3);
-		   		DownloadManager.trayframe.modelTray.setValueAt("Failed",currThread,1);
+		   		DownloadManager.trayframe.modelTray.setValueAt("Failed",trayR,1);
 			}
 		}
 	}

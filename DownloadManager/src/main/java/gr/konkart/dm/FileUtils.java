@@ -1,15 +1,21 @@
 package gr.konkart.dm;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
 
 public class FileUtils{
 	String location;
@@ -40,7 +46,7 @@ public class FileUtils{
 	}
   	
   	//method to delete files or a folder and all its content
-	public void deleteFiles(File file) {
+	public boolean deleteFiles(File file) {
 		File[] contents = file.listFiles();
 		if (contents!=null) {
 			for (File f : contents) {
@@ -49,7 +55,7 @@ public class FileUtils{
 				}
 			}
 		}
-		file.delete();
+		return file.delete();
 	}
   	
   	//method to move a folder and its content to a new folder
@@ -112,39 +118,50 @@ public class FileUtils{
   		String keepName[] = n.split("\\.");
   		System.out.println(n + keepName.length);
   		String nameOfFile = keepName[0];
+  		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+  		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
   		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
   		//executes cmd command and reads the output
+  		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
   		Runnable task = () -> {
   			int erCode = 0;
   			try {
   				Process process2=Runtime.getRuntime().exec(command);
-  				InputStream in = process2.getErrorStream();
-  				int c;
-  				while ((c = in.read()) != -1)
-  				{
-  				    System.out.print((char)c);
+  				in = process2.getErrorStream();
+  				String c;
+  				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+  				while (( c = reader.readLine()) != null)	{
+  					if(c.contains("Duration")) {
+  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+  					} else if (c.contains("time=")) {
+  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+  					}
   				}
+  				reader.close();
   				in.close();
   				erCode = process2.waitFor();
   				if (erCode!=0) {
   					process2=Runtime.getRuntime().exec(commandFallback);
-  	  				in = process2.getErrorStream();
-  	  				while ((c = in.read()) != -1)
-  	  				{
-  	  				    System.out.print((char)c);
+  					in = process2.getErrorStream();
+  					reader = new BufferedReader(new InputStreamReader(in));
+  	  				while (( c = reader.readLine()) != null)	{
+  	  					if(c.contains("Duration")) {
+  	  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+  	  					} else if (c.contains("time=")) {
+  	  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+  	  					}
   	  				}
+  	  				reader.close();
   	  				in.close();
   	  				erCode = process2.waitFor();
   				}
 		  		}
-  			 	catch (FileNotFoundException e1) {
-  					System.out.println("e1");
-  			 	}catch(Exception Io) {
-		  			System.out.println(Io);
-		  		}
-  			
+  			 	catch (Exception e1) {
+  			 		e1.printStackTrace();
+  			 	}
   				finally {
+  					ff.ffmpegProgressFrame.dispose();
   					JFrame frame = new JFrame();
   					frame.setAlwaysOnTop( true );
   					if (erCode==0) {
@@ -155,6 +172,7 @@ public class FileUtils{
   					}
   					frame.toFront();
   					frame.setAlwaysOnTop( true );
+  					
   				}
   		};
   		Thread thread = new Thread(task);                                                
@@ -163,40 +181,51 @@ public class FileUtils{
   	//audio conversion using ffmpeg
   	public void audioConv(String n , String t) {
   		String keepName[] = n.split("\\.");
-  		System.out.println(n + keepName.length);
   		String nameOfFile = keepName[0];
+  		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+  		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
   		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
   		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
+  		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
   		//executes cmd command and reads the output
   		Runnable task = () -> {
   			int erCode = 0;
   			try {
   		
   				Process process2=Runtime.getRuntime().exec(command);
-  				InputStream in = process2.getErrorStream();
-  				int c;
-  				while ((c = in.read()) != -1)
-  				{
-  				    System.out.print((char)c);
+  				in = process2.getErrorStream();
+  				String c;
+  				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+  				while (( c = reader.readLine()) != null)	{
+  					if(c.contains("Duration")) {
+  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+  					} else if (c.contains("time=")) {
+  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+  					}
   				}
+  				reader.close();
   				in.close();
   				erCode = process2.waitFor();
   				if (erCode!=0) {
   					process2=Runtime.getRuntime().exec(commandFallback);
-  	  				in = process2.getErrorStream();
-  	  				while ((c = in.read()) != -1)
-  	  				{
-  	  				    System.out.print((char)c);
+  					in = process2.getErrorStream();
+  					reader = new BufferedReader(new InputStreamReader(in));
+  	  				while (( c = reader.readLine()) != null)	{
+  	  					if(c.contains("Duration")) {
+  	  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+  	  					} else if (c.contains("time=")) {
+  	  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+  	  					}
   	  				}
+  	  				reader.close();
   	  				in.close();
   	  				erCode = process2.waitFor();
   				}
-  			}catch (FileNotFoundException e1) {
-  					System.out.println("e1");
-  			}catch(Exception Io) {
-		  			System.out.println(Io);
-		  	}
+  			}catch (Exception e1) {
+  					e1.printStackTrace();
+  			}
   			finally {
+  				ff.ffmpegProgressFrame.dispose();
   				JFrame frame = new JFrame();
   				frame.setAlwaysOnTop( true );
   					if (erCode==0) {
@@ -207,10 +236,63 @@ public class FileUtils{
 					}
 					frame.toFront();
 					frame.setAlwaysOnTop( true );
-				}
+  			}
   		};
   		Thread thread = new Thread(task);                                                
   		thread.start(); 
   	}
-}
 
+  	public class FfmpegRender extends JFrame{
+  		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		JFrame ffmpegProgressFrame;
+  		JProgressBar progressBar;
+  		long max;
+  	  	/**
+  	  	 * @wbp.parser.entryPoint
+  	  	 */
+	  	public FfmpegRender(String from,String to) {
+  			ffmpegProgressFrame = new JFrame();
+	  		ffmpegProgressFrame.setResizable(false);
+	  		ffmpegProgressFrame.getContentPane().setLayout(null);
+	  			
+	  			
+	  		progressBar = new JProgressBar();
+	  		progressBar.setBounds(10, 81, 414, 29);
+	  		ffmpegProgressFrame.getContentPane().add(progressBar);
+	  			
+	  		JLabel fromLabel = new JLabel("New label");
+	  		fromLabel.setHorizontalAlignment(SwingConstants.CENTER);
+	  		fromLabel.setBounds(10, 11, 414, 14);
+	  		ffmpegProgressFrame.getContentPane().add(fromLabel);
+	  		fromLabel.setText(from);
+	  			
+	  		JLabel toLabel = new JLabel("New label");
+	  		toLabel.setHorizontalAlignment(SwingConstants.CENTER);
+	  		toLabel.setBounds(10, 56, 414, 14);
+	  		ffmpegProgressFrame.getContentPane().add(toLabel);
+	  		toLabel.setText(to);
+	  			
+	  		JLabel lblTo = new JLabel("To");
+	  		lblTo.setHorizontalAlignment(SwingConstants.CENTER);
+	  		lblTo.setBounds(10, 25, 414, 29);
+	  		ffmpegProgressFrame.getContentPane().add(lblTo);
+	  		ffmpegProgressFrame.setVisible(true);
+	  			
+	  		Dimension dimension = new Dimension(440,150);
+	  		ffmpegProgressFrame.setPreferredSize(dimension);
+	  		ffmpegProgressFrame.pack();
+	  		ffmpegProgressFrame.setLocationRelativeTo(null);
+	  		ffmpegProgressFrame.setVisible(true);
+	  	}
+	  	public void progress(boolean getDuration,long en) {
+	  		if (getDuration==true) {
+	  			max = en;
+	  		} else {
+	  			progressBar.setValue((int) ((en*100) / max));
+	  		}
+	  	}
+  	}
+}
