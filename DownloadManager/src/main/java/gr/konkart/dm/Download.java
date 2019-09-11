@@ -32,13 +32,13 @@ public class Download implements Runnable{
 	long fStartPos,fEndPos,partsize;
 	String partname;
 	String nameOfFile;
-	public Download(int downloadID,String fileLoc,String filename,String location){
+	private int trayRow;
+	public Download(int downloadID,String fileLoc,String filename,String location,int trayRow){
 		this.fileLoc = fileLoc;
 		this.downloadID = downloadID;
 		this.location = location;
-		
+		this.trayRow = trayRow;
 		this.nameOfFile = filename;
-
 		activeSubConn=0;
 		complete=0;
 			try{
@@ -148,7 +148,7 @@ public class Download implements Runnable{
 		
 		
 		/*
-		 * setRateLimit(),concatSub(),concatSub(),
+		 * setRateLimit(),concatSub(),getTrayRow()
 		 * deleteSubFiles(),PauseDownload(),getPause(),
 		 * isDownloadComplete(),isDownloadFailed(),setLocation(),
 		 * doSinglePart()
@@ -279,6 +279,9 @@ public class Download implements Runnable{
 			this.location = location;
 		}
 		
+		public int getTrayRow(){
+			return trayRow;
+		}
 		public void run(){
 			if ( fileSize > 0 ) {
 				try {

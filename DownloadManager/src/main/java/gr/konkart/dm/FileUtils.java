@@ -20,7 +20,6 @@ import javax.swing.SwingConstants;
 public class FileUtils{
 	String location;
 	InputStream in = null;
-	RandomAccessFile raf;
 	
 	// concatenates the temporary files in order to create the final wanted file
 	public void concat(String args[],String outPut,String location) throws IOException{
@@ -31,18 +30,18 @@ public class FileUtils{
 		OutputStream out = new FileOutputStream(location+f);
 		
 		
-	    byte[] buf = new byte[1024*4];
-	    for (String file : args) {
+		byte[] buf = new byte[1024*4];
+		for (String file : args) {
 	        
 			InputStream in = new FileInputStream(location+file);
-	        int b = 0;
-	        while ( (b = in.read(buf)) >= 0) {
-	            out.write(buf, 0, b);
-	            out.flush();
-	        }
-	        in.close();
-	    }
-	    out.close();
+			int b = 0;
+			while ( (b = in.read(buf)) >= 0) {
+				out.write(buf, 0, b);
+				out.flush();
+			}
+			in.close();
+		}
+		out.close();
 	}
   	
   	//method to delete files or a folder and all its content
@@ -78,221 +77,216 @@ public class FileUtils{
   	/*image conversion method by creating a buffered image and writing on it
   	*	t variable is the extension type that was chose on context menu
   	*/
-  	public void imgConv(String n , String t) {
-  		BufferedImage bufferedImage;
-  		File inputFile = new File(n);
-  		String split[] = n.split("\\.");
-  		String keepName = split[0];
+	public void imgConv(String n , String t) {
+		BufferedImage bufferedImage;
+		File inputFile = new File(n);
+		String split[] = n.split("\\.");
+		String keepName = split[0];
   	
-  		File outputFile = new File(keepName+"."+t);
+		File outputFile = new File(keepName+"."+t);
 
-  		try (InputStream is = new FileInputStream(inputFile)){
+		try (InputStream is = new FileInputStream(inputFile)){
 			
   		 
-  			bufferedImage = ImageIO.read(is);
+			bufferedImage = ImageIO.read(is);
   			// create a blank, RGB, same width and height, and a white background
-	  		try (OutputStream os = new FileOutputStream(outputFile)){ 
+			try (OutputStream os = new FileOutputStream(outputFile)){ 
 	  		 
-	  		  BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
-	  				bufferedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
-	  		  newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, Color.WHITE, null);
+				BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
+						bufferedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+				newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, Color.WHITE, null);
 	  		//write our image with the new extension (t)
-	  		  ImageIO.write(newBufferedImage, t, os);
+				ImageIO.write(newBufferedImage, t, os);
 	
-	  		  System.out.println("Done");
+				System.out.println("Done");
 	  				
-		  		} catch (IOException e) {
+			} catch (IOException e) {
 		
-		  		  e.printStackTrace();
+				e.printStackTrace();
 		
-		  		}
-  		}catch (FileNotFoundException e1) {
-			System.out.println("e1");
-		}catch (IOException e1) {
-			System.out.println("e1");
+			}
+		}catch (Exception e1) {
+			e1.printStackTrace();
 		}
-  	}
+	}
   	//video conversion using ffmpeg
-  	public void videoConv(String n , String t) {
-  		//File ffmpeg = new File("ffmpeg.exe");
-  		String keepName[] = n.split("\\.");
-  		System.out.println(n + keepName.length);
-  		String nameOfFile = keepName[0];
-  		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-  		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-  		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
-  		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
-  		//executes cmd command and reads the output
-  		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
-  		Runnable task = () -> {
-  			int erCode = 0;
-  			try {
-  				Process process2=Runtime.getRuntime().exec(command);
-  				in = process2.getErrorStream();
-  				String c;
-  				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-  				while (( c = reader.readLine()) != null)	{
-  					if(c.contains("Duration")) {
-  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
-  					} else if (c.contains("time=")) {
-  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
-  					}
-  				}
-  				reader.close();
-  				in.close();
-  				erCode = process2.waitFor();
-  				if (erCode!=0) {
-  					process2=Runtime.getRuntime().exec(commandFallback);
-  					in = process2.getErrorStream();
-  					reader = new BufferedReader(new InputStreamReader(in));
-  	  				while (( c = reader.readLine()) != null)	{
-  	  					if(c.contains("Duration")) {
-  	  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
-  	  					} else if (c.contains("time=")) {
-  	  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
-  	  					}
-  	  				}
-  	  				reader.close();
+	public void videoConv(String n , String t) {
+		//File ffmpeg = new File("ffmpeg.exe");
+		String keepName[] = n.split("\\.");
+		System.out.println(n + keepName.length);
+		String nameOfFile = keepName[0];
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
+		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+n+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+nameOfFile+"."+t};
+		//executes cmd command and reads the output
+		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
+		Runnable task = () -> {
+			int erCode = 0;
+			try {
+				Process process2=Runtime.getRuntime().exec(command);
+				in = process2.getErrorStream();
+				String c;
+				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+				while (( c = reader.readLine()) != null)	{
+					if(c.contains("Duration")) {
+						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+					} else if (c.contains("time=")) {
+						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+					}
+				}
+				reader.close();
+				in.close();
+				erCode = process2.waitFor();
+				if (erCode!=0) {
+					process2=Runtime.getRuntime().exec(commandFallback);
+					in = process2.getErrorStream();
+					reader = new BufferedReader(new InputStreamReader(in));
+					while (( c = reader.readLine()) != null)	{
+						if(c.contains("Duration")) {
+							ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+						} else if (c.contains("time=")) {
+							ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+						}
+					}
+					reader.close();
   	  				in.close();
   	  				erCode = process2.waitFor();
   				}
-		  		}
-  			 	catch (Exception e1) {
-  			 		e1.printStackTrace();
-  			 	}
-  				finally {
-  					ff.ffmpegProgressFrame.dispose();
-  					JFrame frame = new JFrame();
-  					frame.setAlwaysOnTop( true );
-  					if (erCode==0) {
-  						JOptionPane.showMessageDialog(frame, "File conversion complete!");
-  					}
-  					else {
-  						JOptionPane.showMessageDialog(frame, "File conversion failed.");
-  					}
-  					frame.toFront();
-  					frame.setAlwaysOnTop( true );
-  					
-  				}
-  		};
-  		Thread thread = new Thread(task);                                                
-  		thread.start(); 
-  	}
+			}
+			catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			finally {
+				ff.ffmpegProgressFrame.dispose();
+				JFrame frame = new JFrame();
+				frame.setAlwaysOnTop( true );
+				if (erCode==0) {
+					JOptionPane.showMessageDialog(frame, "File conversion complete!");
+				} else {
+					JOptionPane.showMessageDialog(frame, "File conversion failed.");
+				}
+				frame.toFront();
+				frame.setAlwaysOnTop( true );
+			}
+		};
+		Thread thread = new Thread(task);                                                
+		thread.start(); 
+	}
   	//audio conversion using ffmpeg
-  	public void audioConv(String n , String t) {
-  		String keepName[] = n.split("\\.");
-  		String nameOfFile = keepName[0];
-  		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-  		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-  		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
-  		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
-  		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
+	public void audioConv(String n , String t) {
+		String keepName[] = n.split("\\.");
+		String nameOfFile = keepName[0];
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String[] command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
+		String[] commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+n+" -speed fast -threads 4 "+nameOfFile+"."+t};
+		FfmpegRender ff = new FfmpegRender(n.substring(n.lastIndexOf('\\')+1),nameOfFile.substring(nameOfFile.lastIndexOf('\\')+1)+"."+t);
   		//executes cmd command and reads the output
-  		Runnable task = () -> {
-  			int erCode = 0;
-  			try {
+		Runnable task = () -> {
+			int erCode = 0;
+			try {
   		
-  				Process process2=Runtime.getRuntime().exec(command);
-  				in = process2.getErrorStream();
-  				String c;
-  				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-  				while (( c = reader.readLine()) != null)	{
-  					if(c.contains("Duration")) {
-  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
-  					} else if (c.contains("time=")) {
-  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
-  					}
-  				}
-  				reader.close();
-  				in.close();
-  				erCode = process2.waitFor();
-  				if (erCode!=0) {
-  					process2=Runtime.getRuntime().exec(commandFallback);
-  					in = process2.getErrorStream();
-  					reader = new BufferedReader(new InputStreamReader(in));
-  	  				while (( c = reader.readLine()) != null)	{
-  	  					if(c.contains("Duration")) {
-  	  						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
-  	  					} else if (c.contains("time=")) {
-  	  						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
-  	  					}
-  	  				}
-  	  				reader.close();
-  	  				in.close();
-  	  				erCode = process2.waitFor();
-  				}
-  			}catch (Exception e1) {
+				Process process2=Runtime.getRuntime().exec(command);
+				in = process2.getErrorStream();
+				String c;
+				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+				while (( c = reader.readLine()) != null)	{
+					if(c.contains("Duration")) {
+						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+					} else if (c.contains("time=")) {
+						ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+					}
+				}
+				reader.close();
+				in.close();
+				erCode = process2.waitFor();
+				if (erCode!=0) {
+					process2=Runtime.getRuntime().exec(commandFallback);
+					in = process2.getErrorStream();
+					reader = new BufferedReader(new InputStreamReader(in));
+					while (( c = reader.readLine()) != null)	{
+						if(c.contains("Duration")) {
+							ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
+						} else if (c.contains("time=")) {
+							ff.progress(false,sdf.parse("1970-01-01 " + c.split("time=")[1].split(" ")[0]).getTime());
+						}
+					}
+					reader.close();
+					in.close();
+					erCode = process2.waitFor();
+				}
+			}catch (Exception e1) {
   					e1.printStackTrace();
   			}
-  			finally {
-  				ff.ffmpegProgressFrame.dispose();
-  				JFrame frame = new JFrame();
-  				frame.setAlwaysOnTop( true );
-  					if (erCode==0) {
-						JOptionPane.showMessageDialog(frame, "File conversion complete!");
-					} 
-					else {
-						JOptionPane.showMessageDialog(frame, "File conversion failed.");
-					}
-					frame.toFront();
-					frame.setAlwaysOnTop( true );
-  			}
-  		};
-  		Thread thread = new Thread(task);                                                
-  		thread.start(); 
-  	}
+			finally {
+				ff.ffmpegProgressFrame.dispose();
+				JFrame frame = new JFrame();
+				frame.setAlwaysOnTop( true );
+				if (erCode==0) {
+					JOptionPane.showMessageDialog(frame, "File conversion complete!");
+				} else {
+					JOptionPane.showMessageDialog(frame, "File conversion failed.");
+				}
+				frame.toFront();
+				frame.setAlwaysOnTop( true );
+			}
+		};
+		Thread thread = new Thread(task);                                                
+		thread.start(); 
+	}
 
-  	public class FfmpegRender extends JFrame{
-  		/**
+	public class FfmpegRender extends JFrame{
+		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
 		JFrame ffmpegProgressFrame;
-  		JProgressBar progressBar;
-  		long max;
-  	  	/**
-  	  	 * @wbp.parser.entryPoint
-  	  	 */
-	  	public FfmpegRender(String from,String to) {
-  			ffmpegProgressFrame = new JFrame();
-	  		ffmpegProgressFrame.setResizable(false);
-	  		ffmpegProgressFrame.getContentPane().setLayout(null);
+		JProgressBar progressBar;
+		long max;
+		/**
+		 * @wbp.parser.entryPoint
+		 */
+		public FfmpegRender(String from,String to) {
+			ffmpegProgressFrame = new JFrame();
+			ffmpegProgressFrame.setResizable(false);
+			ffmpegProgressFrame.getContentPane().setLayout(null);
 	  			
 	  			
-	  		progressBar = new JProgressBar();
-	  		progressBar.setBounds(10, 81, 414, 29);
-	  		ffmpegProgressFrame.getContentPane().add(progressBar);
+			progressBar = new JProgressBar();
+			progressBar.setBounds(10, 81, 414, 29);
+			ffmpegProgressFrame.getContentPane().add(progressBar);
 	  			
-	  		JLabel fromLabel = new JLabel("New label");
-	  		fromLabel.setHorizontalAlignment(SwingConstants.CENTER);
-	  		fromLabel.setBounds(10, 11, 414, 14);
-	  		ffmpegProgressFrame.getContentPane().add(fromLabel);
-	  		fromLabel.setText(from);
+			JLabel fromLabel = new JLabel("New label");
+			fromLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			fromLabel.setBounds(10, 11, 414, 14);
+			ffmpegProgressFrame.getContentPane().add(fromLabel);
+			fromLabel.setText(from);
 	  			
-	  		JLabel toLabel = new JLabel("New label");
-	  		toLabel.setHorizontalAlignment(SwingConstants.CENTER);
-	  		toLabel.setBounds(10, 56, 414, 14);
-	  		ffmpegProgressFrame.getContentPane().add(toLabel);
-	  		toLabel.setText(to);
+			JLabel toLabel = new JLabel("New label");
+			toLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			toLabel.setBounds(10, 56, 414, 14);
+			ffmpegProgressFrame.getContentPane().add(toLabel);
+			toLabel.setText(to);
 	  			
-	  		JLabel lblTo = new JLabel("To");
-	  		lblTo.setHorizontalAlignment(SwingConstants.CENTER);
-	  		lblTo.setBounds(10, 25, 414, 29);
-	  		ffmpegProgressFrame.getContentPane().add(lblTo);
-	  		ffmpegProgressFrame.setVisible(true);
+			JLabel lblTo = new JLabel("To");
+			lblTo.setHorizontalAlignment(SwingConstants.CENTER);
+			lblTo.setBounds(10, 25, 414, 29);
+			ffmpegProgressFrame.getContentPane().add(lblTo);
+			ffmpegProgressFrame.setVisible(true);
 	  			
-	  		Dimension dimension = new Dimension(440,150);
-	  		ffmpegProgressFrame.setPreferredSize(dimension);
-	  		ffmpegProgressFrame.pack();
-	  		ffmpegProgressFrame.setLocationRelativeTo(null);
-	  		ffmpegProgressFrame.setVisible(true);
-	  	}
-	  	public void progress(boolean getDuration,long en) {
-	  		if (getDuration==true) {
-	  			max = en;
-	  		} else {
-	  			progressBar.setValue((int) ((en*100) / max));
-	  		}
-	  	}
-  	}
+			Dimension dimension = new Dimension(440,150);
+			ffmpegProgressFrame.setPreferredSize(dimension);
+			ffmpegProgressFrame.pack();
+			ffmpegProgressFrame.setLocationRelativeTo(null);
+			ffmpegProgressFrame.setVisible(true);
+		}
+		public void progress(boolean getDuration,long en) {
+			if (getDuration==true) {
+				max = en;
+			} else {
+				progressBar.setValue((int) ((en*100) / max));
+			}
+		}
+	}
 }

@@ -29,7 +29,7 @@ public class SubDownload implements Runnable{
 	FileOutputStream outputStream = null;
 	private boolean isPartial=false;
 	boolean failed = false;
-	Long oldtime;
+	long oldtime;
 	long now;
 	long downed = 0L;
 	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){

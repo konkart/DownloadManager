@@ -20,17 +20,17 @@ public class Torrent implements Runnable{
 	String fileLoc;
 	long startTime;
 	private boolean complete; //Completion flag
-	private int downloadId; //Download ID
 	private String location;
 	private String folderName;
 	private boolean stopped = false;
-	public Torrent(String fileLoc,int downloadID,String nameFolder,String location){//Torrent constructor
+	private int trayRow;
+	public Torrent(String fileLoc,String nameFolder,String location,int trayRow){//Torrent constructor
 		this.fileLoc = fileLoc;
-		this.downloadId = downloadID;
 		this.complete = false;
 		this.location = location;
 		this.folderName = nameFolder;
-		}
+		this.trayRow = trayRow;
+	}
 	volatile boolean paused=false; //Paused Flag
 	private long downloaded;//Downloaded Bytes
 	private long downloadedS;//Variable used in download speed(gets 'downloaded's value)
@@ -155,6 +155,9 @@ public class Torrent implements Runnable{
 	}
 	public String getFolderName() {
 		return folderName;
+	}
+	public int getTrayRow() {
+		return trayRow;
 	}
 	
 }

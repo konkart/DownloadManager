@@ -247,9 +247,8 @@ public class DownloadManager {
 				return;
 			}
 			btnDownload.setEnabled(false);
-			String type;
-			if(URLHandler.isUrl(textField.getText())=="URL") {
-				type = "URL";
+			String type = URLHandler.isUrl(textField.getText());
+			if(type=="URL") {
 				fileLoc = textField.getText();
 				textField.setText("");
 				String fileN = URLHandler.getFilename(fileLoc);
@@ -258,7 +257,7 @@ public class DownloadManager {
 				model.addRow(item);
 				trayframe.modelTray.addRow(itemTray);
 				/*-------OOOOO-------*/
-				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
+				Download download = new Download(downloadID,fileLoc,fileN,homeDefault,trayFrameRow);
 				df.add(download);
 				Monitor dMonitor = new Monitor(window,downloadID,type,trayFrameRow);
 				pool.execute(df.get(downloadID));
@@ -270,8 +269,7 @@ public class DownloadManager {
 					downloadSpeedLimit(speedLimitNumber);
 				}
 				/*--------------*/
-			} else if (URLHandler.isUrl(textField.getText())=="Torrent") {
-				type="Torrent";
+			} else if (type=="Torrent") {
 				fileLoc = textField.getText();
 				textField.setText("");
 				String[] magnetParts = fileLoc.split("&"); 
@@ -290,7 +288,7 @@ public class DownloadManager {
 				trayframe.modelTray.addRow(itemTray);
 				Monitor dMonitor = new Monitor(window,torrentID,type,trayFrameRow);
 				System.out.println(NameTo);
-				Torrent to = new Torrent(fileLoc,torrentID,NameTo,homeDefault);
+				Torrent to = new Torrent(fileLoc,NameTo,homeDefault,trayFrameRow);
 				tr.add(to);
 				
 				pool.execute(tr.get(torrentID));
@@ -428,25 +426,25 @@ public class DownloadManager {
   				return;
   			}
 			  	Monitor dMonitor = null;
-			  	Long DateToS = (((Long) spinner.getValue() * 24)*60)*60;
-			  	Long HoursToS = ((Long) spinner_1.getValue() *60)*60;
-			  	Long MinToS = (Long) spinner_2.getValue() *60;
-			  	System.out.println(DateToS+" "+HoursToS+" "+MinToS);
-			  	Long timer =  DateToS+HoursToS+MinToS;
+			  	long dateToS = (((Long) spinner.getValue() * 24)*60)*60;
+			  	long hoursToS = ((Long) spinner_1.getValue() *60)*60;
+			  	long minToS = (Long) spinner_2.getValue() *60;
+			  	System.out.println(dateToS+" "+hoursToS+" "+minToS);
+			  	long timer =  dateToS+hoursToS+minToS;
 			  	String type = null;
 			  	int tmpID = 0;
-    			if (URLHandler.isUrl(textField.getText())=="URL") {
-    				type = "URL";
+			  	type = URLHandler.isUrl(textField.getText());
+    			if (type=="URL") {
     				System.out.println("it is a URL");
     				fileLoc = textField.getText();
     				String fileN = URLHandler.getFilename(fileLoc);
-    				String[] item={""+downloadID+"",fileN,"Scheduled","Scheduled",getDateTime(),fileLoc,homeDefault};
+    				String[] item={""+downloadID+"",fileN,"Scheduled","Scheduled",getScheduledDate(timer),fileLoc,homeDefault};
     				String[] itemTray={fileN,"Scheduled"};
 
     				model.addRow(item);
     				trayframe.modelTray.addRow(itemTray);
     				/*-------OOOOO-------*/
-    				Download download = new Download(downloadID,fileLoc,fileN,homeDefault);
+    				Download download = new Download(downloadID,fileLoc,fileN,homeDefault,trayFrameRow);
     			    df.add(download);
     			    dMonitor = new Monitor(window,downloadID,type,trayFrameRow);
     			    tmpID = downloadID;
@@ -454,8 +452,7 @@ public class DownloadManager {
 					active=active+1;
 					trayFrameRow = trayFrameRow + 1;
     			    textField.setText("");
-    			} else if (URLHandler.isUrl(textField.getText())=="Torrent") {
-    				type="Torrent";
+    			} else if (type=="Torrent") {
     				fileLoc = textField.getText();
     				String[] magnetParts = fileLoc.split("&"); 
     				String toName = magnetParts[1];
@@ -467,14 +464,14 @@ public class DownloadManager {
     				} catch (UnsupportedEncodingException e1) {
     					e1.printStackTrace();
     				}
-    				String[] item={""+torrentID+"",NameTo,"Scheduled","Scheduled",getDateTime(),fileLoc,homeDefault+NameTo+"\\"};
+    				String[] item={""+torrentID+"",NameTo,"Scheduled","Scheduled",getScheduledDate(timer),fileLoc,homeDefault+NameTo+"\\"};
     				String[] itemTray={NameTo,"Scheduled"};
 
     				model.addRow(item);
     				trayframe.modelTray.addRow(itemTray);
     				dMonitor = new Monitor(window,torrentID,type,trayFrameRow);
     				System.out.println(NameTo);
-    				Torrent to = new Torrent(fileLoc,torrentID,NameTo,homeDefault);
+    				Torrent to = new Torrent(fileLoc,NameTo,homeDefault,trayFrameRow);
     				tr.add(to);
     				tmpID = torrentID;
     				torrentID = torrentID+1;
@@ -590,7 +587,7 @@ public class DownloadManager {
 				if (per>=1 && per<100) {
 					openFolder.setVisible(true);
 					pause.setVisible(true);
-					if (tr.get(Integer.parseInt(value)).getStopped()==true) {
+					if (per>1 && tr.get(Integer.parseInt(value)).getStopped()==true) {
 						delete.setVisible(true);
 						move.setVisible(true);
 					}
@@ -1036,11 +1033,12 @@ public class DownloadManager {
 					  String url = table_1.getModel().getValueAt(row, 5).toString();
 					  location = table_1.getModel().getValueAt(row, 6).toString();
 					  String fileN = table_1.getModel().getValueAt(row, 1).toString();
+					  int tRow = df.get(Integer.parseInt(value)).getTrayRow();
 					  try {
 						  if(df.get(Integer.parseInt(value)).getPause()==true || df.get(Integer.parseInt(value)).getComplete()==1) {
-						  Download download = new Download(Integer.parseInt(value),url,fileN,location);
+						  Download download = new Download(Integer.parseInt(value),url,fileN,location,tRow);
 						  df.set(Integer.parseInt(value),download);
-						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,trayFrameRow);
+						  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,tRow);
 						  pool.execute(df.get(Integer.parseInt(value)));
 						  pool.execute(dMonitor);
 						  active=active+1;
@@ -1057,10 +1055,11 @@ public class DownloadManager {
     				  String magnet = table_2.getModel().getValueAt(row, 5).toString();
     				  String NameTo = table_2.getModel().getValueAt(row, 1).toString();
     				  location = table_2.getModel().getValueAt(row, 6).toString();
+    				  int tRow = tr.get(Integer.parseInt(value)).getTrayRow();
     				  if(tr.get(Integer.parseInt(value)).getPaused()==true || tr.get(Integer.parseInt(value)).getComplete()==true) {
-    				  Torrent to = new Torrent(magnet,Integer.parseInt(value),NameTo,Paths.get(location).getParent().toString()+"\\");
+    				  Torrent to = new Torrent(magnet,NameTo,Paths.get(location).getParent().toString()+"\\",tRow);
     				  tr.set(Integer.parseInt(value),to);
-    				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,trayFrameRow);
+    				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,tRow);
     				  pool.execute(tr.get(Integer.parseInt(value)));
     				  pool.execute(dMonitor);
     				  }
@@ -1079,6 +1078,13 @@ public class DownloadManager {
 	private String getDateTime() {
         DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
         Date date = new Date();
+        return dateFormat.format(date);
+    }
+	private String getScheduledDate(long x) {
+        DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
+        long ftrtime  = System.currentTimeMillis() + (x*1000);
+        Date date = new Date(ftrtime);
+        System.out.println(dateFormat.format(date));
         return dateFormat.format(date);
     }
 	
@@ -1221,7 +1227,7 @@ public class DownloadManager {
 	public class Schedule {
 		private final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
 		private ScheduledFuture<?> sch;
-		public Schedule(Long x,String t,Monitor d,int ID) {
+		public Schedule(long x,String t,Monitor d,int ID) {
 			scheduler.setRemoveOnCancelPolicy(true);
 			sch = scheduler.schedule(new Runnable() {
 				@Override
