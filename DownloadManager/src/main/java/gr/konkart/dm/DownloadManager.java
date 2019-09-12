@@ -561,7 +561,7 @@ public class DownloadManager {
 		String type = null;
 		String percent;
 		String fileMIME[];
-		String filetype = "";
+		String filetype;
 		String location = homeDefault;
 		String value;
 		int row;
@@ -638,7 +638,7 @@ public class DownloadManager {
 					sectionsMenu.setVisible(true);
 					open.setVisible(true);
 					move.setVisible(true);
-					if (filetype.equals("image")) {
+					if ( "image".equals(filetype) ) {
 					    png.setVisible(true);
 					    jpg.setVisible(true);
 					    gif.setVisible(true);
@@ -652,7 +652,7 @@ public class DownloadManager {
 					    mp3.setVisible(false);
 					    wav.setVisible(false);
 					}
-					if (filetype.equals("video")) {
+					if ( "video".equals(filetype) ) {
 						mp4.setVisible(true);
 					    flv.setVisible(true);
 					    avi.setVisible(true);
@@ -666,7 +666,7 @@ public class DownloadManager {
 					    jpg.setVisible(false);
 					    bmp.setVisible(false);
 					}
-					if (filetype.equals("audio")) {
+					if ( "audio".equals(filetype) ) {
 					    acc.setVisible(true);
 					    ogg.setVisible(true);
 					    mp3.setVisible(true);
