@@ -150,8 +150,8 @@ public class Download implements Runnable{
 		/*
 		 * setRateLimit(),concatSub(),getTrayRow()
 		 * deleteSubFiles(),PauseDownload(),getPause(),
-		 * isDownloadComplete(),isDownloadFailed(),setLocation(),
-		 * doSinglePart()
+		 * isDownloadComplete(),isDownloadFailed(),
+		 * doSinglePart()....
 		 * 
 		 * @author KONSTANTINOS KARTOFIS
 		 */
@@ -274,13 +274,20 @@ public class Download implements Runnable{
 		public int getTotConnections() {
 			return totConnections;
 		}
-		
-		public void setLocation(String location) {
-			this.location = location;
-		}
-		
 		public int getTrayRow(){
 			return trayRow;
+		}
+		public String getFileLoc() {
+			return fileLoc;
+		}
+		public String getLocation() {
+			return location;
+		}
+		public String getNameOfFile() {
+			return nameOfFile;
+		}
+		public void setLocation(String location) {
+			this.location = location;
 		}
 		public void run(){
 			if ( fileSize > 0 ) {

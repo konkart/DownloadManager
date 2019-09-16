@@ -216,7 +216,7 @@ public class DownloadManager {
 			new Object[][] {
 			},
 			new String[] {
-				"ID", "Name", "Progress", "Size", "Date", "URL","Location"
+				"ID", "Name", "Progress", "Size", "Date", "URL"
 			}
 		));
 		table_1.getColumnModel().getColumn(0).setPreferredWidth(20);
@@ -360,7 +360,7 @@ public class DownloadManager {
 			new Object[][] {
 			},
 			new String[] {
-					"ID","Name", "Progress", "Session bytes", "Date" , "Magnet","Location"
+					"ID","Name", "Progress", "Session bytes", "Date" , "Magnet"
 			}
 		));
 		table_2.getColumnModel().getColumn(0).setPreferredWidth(20);
@@ -418,22 +418,20 @@ public class DownloadManager {
 		//button that calls the scheduled method with the time given by the spinner componments
 		btnSchedule.addActionListener(new ActionListener()
 		{
-		  public void actionPerformed(ActionEvent e)
-		  {		
-			  if (textField.getText().equals("")){
-  				JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
-
-  				return;
-  			}
-			  	Monitor dMonitor = null;
-			  	long dateToS = (((Long) spinner.getValue() * 24)*60)*60;
-			  	long hoursToS = ((Long) spinner_1.getValue() *60)*60;
-			  	long minToS = (Long) spinner_2.getValue() *60;
-			  	System.out.println(dateToS+" "+hoursToS+" "+minToS);
-			  	long timer =  dateToS+hoursToS+minToS;
-			  	String type = null;
-			  	int tmpID = 0;
-			  	type = URLHandler.isUrl(textField.getText());
+			public void actionPerformed(ActionEvent e)
+			{		
+				if (textField.getText().equals("")){
+					JOptionPane.showMessageDialog(null,"URL is Invalid or Empty.Please enter valid URL","ERROR",JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				Monitor dMonitor = null;
+				long dateToS = (((Long) spinner.getValue() * 24)*60)*60;
+				long hoursToS = ((Long) spinner_1.getValue() *60)*60;
+				long minToS = (Long) spinner_2.getValue() *60;
+				System.out.println(dateToS+" "+hoursToS+" "+minToS);
+				long timer =  dateToS+hoursToS+minToS;
+				int tmpID = 0;
+				String type = URLHandler.isUrl(textField.getText());
     			if (type=="URL") {
     				System.out.println("it is a URL");
     				fileLoc = textField.getText();
@@ -587,7 +585,7 @@ public class DownloadManager {
 				if (per>=1 && per<100) {
 					openFolder.setVisible(true);
 					pause.setVisible(true);
-					if (per>1 && tr.get(Integer.parseInt(value)).getStopped()==true) {
+					if (tr.get(Integer.parseInt(value)).getStopped()==true) {
 						delete.setVisible(true);
 						move.setVisible(true);
 					}
@@ -607,10 +605,11 @@ public class DownloadManager {
 				}
 	    	}
 	    	if (tabbedPane.getSelectedIndex()==0) {
-	        	delete.setVisible(true);
-		        row = table_1.getSelectedRow();
-		        file = table_1.getModel().getValueAt(row, 1).toString();
-		        location = table_1.getModel().getValueAt(row, 6).toString();
+	    		delete.setVisible(true);
+	        	row = table_1.getSelectedRow();
+	        	value = table_1.getModel().getValueAt(row, 0).toString();
+	        	file = df.get(Integer.parseInt(value)).getNameOfFile();
+		        location = df.get(Integer.parseInt(value)).getLocation();
 		        try {
 		        	Path source = Paths.get(location+file);
 		        	if(source.toFile().exists()) {
@@ -711,8 +710,8 @@ public class DownloadManager {
 				if(tabbedPane.getSelectedIndex()==0) {
 					row = table_1.getSelectedRow();
 					value = table_1.getModel().getValueAt(row, 0).toString();
-			        file = table_1.getModel().getValueAt(row, 1).toString();
-			        location = table_1.getModel().getValueAt(row, 6).toString();
+					file = df.get(Integer.parseInt(value)).getNameOfFile();
+					location = df.get(Integer.parseInt(value)).getLocation();
 					File filetoDelete= new File(location+file);
 					if(filetoDelete.exists()) {
 						FileUtils de = new FileUtils();
@@ -737,12 +736,13 @@ public class DownloadManager {
 				}
 				if(tabbedPane.getSelectedIndex()==1) {
 					row = table_2.getSelectedRow();
-					value = table_2.getModel().getValueAt(row, 1).toString();
-			        location = table_2.getModel().getValueAt(row, 6).toString();
-					File foldertoDelete= new File(location);
+					value = table_2.getModel().getValueAt(row, 0).toString();
+			        location = tr.get(Integer.parseInt(value)).getLocation();
+			        file = tr.get(Integer.parseInt(value)).getFolderName();
+					File foldertoDelete= new File(location+file+"\\");
 					if(foldertoDelete.exists()) {
 						FileUtils futil = new FileUtils();
-						System.out.println(value+" "+foldertoDelete.getParent());
+						
 						futil.deleteFiles(foldertoDelete);
 						table_2.getModel().setValueAt("Deleted", row, 3);
 						table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
@@ -758,26 +758,26 @@ public class DownloadManager {
 			public void actionPerformed(ActionEvent e) {
 				if(tabbedPane.getSelectedIndex()==0) {
 					row = table_1.getSelectedRow();
-			        file = table_1.getModel().getValueAt(row, 1).toString();
-			        location = table_1.getModel().getValueAt(row, 6).toString();
-			        value = table_1.getModel().getValueAt(row, 0).toString();
+					value = table_1.getModel().getValueAt(row, 0).toString();
+					file = df.get(Integer.parseInt(value)).getNameOfFile();
+					location = df.get(Integer.parseInt(value)).getLocation();
 					JFileChooser fchooser = new JFileChooser(new File(location));
 					fchooser.setAcceptAllFileFilterUsed(false);
 					fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 					if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
 						try {
 							Files.move(Paths.get(location+file), Paths.get(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file),StandardCopyOption.REPLACE_EXISTING);
-							table_1.getModel().setValueAt(fchooser.getSelectedFile().getAbsolutePath()+"\\",row,6);
+							df.get(Integer.parseInt(value)).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
 						} catch (IOException e1) {
 							e1.printStackTrace();
 						}
 					}
 				} else if(tabbedPane.getSelectedIndex()==1) {
 					row = table_2.getSelectedRow();
-			        location = table_2.getModel().getValueAt(row, 6).toString();
-			        file = table_2.getModel().getValueAt(row, 1).toString();
 			        value = table_2.getModel().getValueAt(row, 0).toString();
-					File foldertoMove = new File(location);
+			        file = tr.get(Integer.parseInt(value)).getFolderName();
+			        location = tr.get(Integer.parseInt(value)).getLocation();
+					File foldertoMove = new File(location+file+"\\");
 					JFileChooser fchooser = new JFileChooser(foldertoMove.getParent());
 					fchooser.setAcceptAllFileFilterUsed(false);
 					fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -786,7 +786,7 @@ public class DownloadManager {
 							FileUtils futils = new FileUtils();
 							futils.moveDir(foldertoMove, new File(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file));
 							futils.deleteFiles(foldertoMove);
-							table_2.getModel().setValueAt(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file+"\\",row,6);
+							tr.get(Integer.parseInt(value)).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
 						} catch (IOException e1) {
 							e1.printStackTrace();
 						}
@@ -804,8 +804,8 @@ public class DownloadManager {
 			public void actionPerformed(ActionEvent arg0) {
 				if(tabbedPane.getSelectedIndex()==0) {
 				row = table_1.getSelectedRow();
-		        file = table_1.getModel().getValueAt(row, 1).toString();
-		        location = table_1.getModel().getValueAt(row, 6).toString();
+				file = df.get(Integer.parseInt(value)).getNameOfFile();
+				location = df.get(Integer.parseInt(value)).getLocation();
 				File filetoOpen = new File(location+file);
 				Desktop desktop = Desktop.getDesktop();
 		        if(filetoOpen.exists()) {
@@ -826,8 +826,9 @@ public class DownloadManager {
 			public void actionPerformed(ActionEvent arg0) {
 				if(tabbedPane.getSelectedIndex()==0) {
 				row = table_1.getSelectedRow();
-				file = table_1.getModel().getValueAt(row, 1).toString();
-				location = table_1.getModel().getValueAt(row, 6).toString();
+				value = table_1.getModel().getValueAt(row, 0).toString();
+				file = df.get(Integer.parseInt(value)).getNameOfFile();
+				location = df.get(Integer.parseInt(value)).getLocation();
 				File filetoOpen = new File(location);
 				Desktop desktop = Desktop.getDesktop();
 				if (filetoOpen.exists()) {
@@ -839,9 +840,9 @@ public class DownloadManager {
 				}
 				} else if(tabbedPane.getSelectedIndex()==1) {
 					row = table_2.getSelectedRow();
-					file = table_2.getModel().getValueAt(row, 1).toString();
-					location = table_2.getModel().getValueAt(row, 6).toString();
-					File filetoOpen = new File(location);
+					file = tr.get(Integer.parseInt(value)).getFolderName();
+					location = tr.get(Integer.parseInt(value)).getLocation();
+					File filetoOpen = new File(location+file+"\\");
 					Desktop desktop = Desktop.getDesktop();
 					if(filetoOpen.exists()) {
 						try {
@@ -963,20 +964,19 @@ public class DownloadManager {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int column = 5;
 				if(tabbedPane.getSelectedIndex()==0) {
 					type = "URL";
 				} else {type="Torrent";}
 				if (type=="URL") {
 					row = table_1.getSelectedRow();
-					value = table_1.getModel().getValueAt(row, column).toString();
-					StringSelection stringSelection = new StringSelection(value);
+					value = table_1.getModel().getValueAt(row, 0).toString();
+					StringSelection stringSelection = new StringSelection(df.get(Integer.parseInt(value)).getFileLoc());
 					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 					clipboard.setContents(stringSelection, null);
 				} else if (type=="Torrent") {
 					row = table_2.getSelectedRow();
-					value = table_2.getModel().getValueAt(row, column).toString();
-					StringSelection stringSelection = new StringSelection(value);
+					value = table_2.getModel().getValueAt(row, 0).toString();
+					StringSelection stringSelection = new StringSelection(tr.get(Integer.parseInt(value)).getMagnetURI());
 					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 					clipboard.setContents(stringSelection, null);
 				}
@@ -1030,9 +1030,9 @@ public class DownloadManager {
 				  if (type=="URL") {
 					  row = table_1.getSelectedRow();
 					  value = table_1.getModel().getValueAt(row, column).toString();
-					  String url = table_1.getModel().getValueAt(row, 5).toString();
-					  location = table_1.getModel().getValueAt(row, 6).toString();
-					  String fileN = table_1.getModel().getValueAt(row, 1).toString();
+					  String url = df.get(Integer.parseInt(value)).getFileLoc();
+					  location = df.get(Integer.parseInt(value)).getLocation();
+					  String fileN = df.get(Integer.parseInt(value)).getNameOfFile();
 					  int tRow = df.get(Integer.parseInt(value)).getTrayRow();
 					  try {
 						  if(df.get(Integer.parseInt(value)).getPause()==true || df.get(Integer.parseInt(value)).getComplete()==1) {
@@ -1049,15 +1049,15 @@ public class DownloadManager {
 					  }catch(Exception e1) {
 						  e1.printStackTrace();
 					  }
-				  } else if(type=="Torrent"){
+				  } else if (type=="Torrent") {
 					  row = table_2.getSelectedRow();
     				  value = table_2.getModel().getValueAt(row, column).toString();
-    				  String magnet = table_2.getModel().getValueAt(row, 5).toString();
-    				  String NameTo = table_2.getModel().getValueAt(row, 1).toString();
-    				  location = table_2.getModel().getValueAt(row, 6).toString();
+    				  String magnet = tr.get(Integer.parseInt(value)).getMagnetURI();
+    				  String NameTo = tr.get(Integer.parseInt(value)).getFolderName();
+    				  location = tr.get(Integer.parseInt(value)).getLocation();
     				  int tRow = tr.get(Integer.parseInt(value)).getTrayRow();
     				  if(tr.get(Integer.parseInt(value)).getPaused()==true || tr.get(Integer.parseInt(value)).getComplete()==true) {
-    				  Torrent to = new Torrent(magnet,NameTo,Paths.get(location).getParent().toString()+"\\",tRow);
+    				  Torrent to = new Torrent(magnet,NameTo,Paths.get(location).toString()+"\\",tRow);
     				  tr.set(Integer.parseInt(value),to);
     				  Monitor dMonitor = new Monitor(window,Integer.parseInt(value),type,tRow);
     				  pool.execute(tr.get(Integer.parseInt(value)));
@@ -1076,17 +1076,17 @@ public class DownloadManager {
 	    }
 	}
 	private String getDateTime() {
-        DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
-        Date date = new Date();
-        return dateFormat.format(date);
-    }
+		DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
+		Date date = new Date();
+		return dateFormat.format(date);
+	}
 	private String getScheduledDate(long x) {
-        DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
-        long ftrtime  = System.currentTimeMillis() + (x*1000);
-        Date date = new Date(ftrtime);
-        System.out.println(dateFormat.format(date));
-        return dateFormat.format(date);
-    }
+		DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
+		long ftrtime  = System.currentTimeMillis() + (x*1000);
+		Date date = new Date(ftrtime);
+		System.out.println(dateFormat.format(date));
+		return dateFormat.format(date);
+	}
 	
 	 /*
 	  *  Monitor class monitors the activity of the download and does actions depending on that activity

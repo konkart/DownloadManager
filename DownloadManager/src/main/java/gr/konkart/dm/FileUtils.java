@@ -49,9 +49,7 @@ public class FileUtils{
 		File[] contents = file.listFiles();
 		if (contents!=null) {
 			for (File f : contents) {
-				if (Files.isSymbolicLink(f.toPath())==false) {
-					deleteFiles(f);
-				}
+				deleteFiles(f);
 			}
 		}
 		return file.delete();
@@ -83,26 +81,28 @@ public class FileUtils{
 		String split[] = n.split("\\.");
 		String keepName = split[0];
 		File outputFile = new File(keepName+"."+t);
-
+		int imgtype;
 		try (InputStream is = new FileInputStream(inputFile)){
 			
-  		 
 			bufferedImage = ImageIO.read(is);
-  			// create a blank, RGB, same width and height, and a white background
-			try (OutputStream os = new FileOutputStream(outputFile)){ 
-	  		 
+			try (OutputStream os = new FileOutputStream(outputFile)){
+				
+				if (t.equals("bmp") || t.equals("jpg")) {
+					imgtype = BufferedImage.TYPE_INT_RGB;
+				} else {
+					imgtype = BufferedImage.TYPE_INT_ARGB;
+				}
+				//create new image and draw our previous image on it
 				BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
-						bufferedImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+						bufferedImage.getHeight(), imgtype);
 				newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, new Color(0,0,0,0),null);
-	  		//write our image with the new extension (t)
+				//write our image with the new extension (t)
 				ImageIO.write(newBufferedImage, t, os);
 	
 				System.out.println("Done");
 	  				
 			} catch (IOException e) {
-		
 				e.printStackTrace();
-		
 			}
 		}catch (Exception e1) {
 			e1.printStackTrace();

@@ -159,6 +159,15 @@ public class Torrent implements Runnable{
 	public int getTrayRow() {
 		return trayRow;
 	}
+	public String getMagnetURI() {
+		return fileLoc;
+	}
+	public String getLocation() {
+		return location;
+	}
+	public void setLocation(String location) {
+		this.location = location;
+	}
 	
 }
 
