@@ -24,7 +24,7 @@ Scheduler(Χρονοδιάγραμμα) και "Copy URL" στο context menu.
 ![](demo1.gif)
 
 Τωρινή εμφάνιση του GUI  
-![](GUI.png)  
+![](GUI_2.jpg)  
   
 [Η βιβλιοθήκη που χρησιμοποιήθηκε για την λειτουργία λήψης torrent.](https://github.com/atomashpolskiy/bt)  
 

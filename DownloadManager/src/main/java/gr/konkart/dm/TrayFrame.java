@@ -10,62 +10,53 @@ import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
 
 public class TrayFrame extends JFrame {
-
-
-private static final long serialVersionUID = 1L;
-JTable table;
-protected DefaultTableModel modelTray;
-Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-public TrayFrame() {
+	private static final long serialVersionUID = 1L;
+	JTable table;
+	protected DefaultTableModel modelTray;
+	Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+	public TrayFrame() {
 		setType(Type.UTILITY);
 		setResizable(false);
 		setAlwaysOnTop(true);
 		setDefaultCloseOperation(JFrame.ICONIFIED);
 		setBounds(100, 100, 340, 240);
 		
-    	
-            /*-----------*/
-            getContentPane().setLayout(null);
+		getContentPane().setLayout(null);
             
-            JScrollPane scrollPane = new JScrollPane();
-            scrollPane.setBounds(10, 11, 314, 189);
-            getContentPane().add(scrollPane);
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(10, 11, 314, 189);
+		getContentPane().add(scrollPane);
             
-            table = new JTable();
-            table.setRowHeight(30);
-            table.setShowVerticalLines(false);
-            table.setShowGrid(false);
-            table.setModel(new DefaultTableModel(
-            	new Object[][] {
-            	},
-            	new String[] {
-            		"Name", "Progress"
-            	}
-            ));
-            table.getColumnModel().getColumn(0).setPreferredWidth(135);
-            modelTray = (DefaultTableModel) table.getModel();
+		table = new JTable();
+		table.setRowHeight(30);
+		table.setShowVerticalLines(false);
+		table.setShowGrid(false);
+		table.setModel(new DefaultTableModel(
+				new Object[][] {
+				},
+				new String[] {
+						"Name", "Progress"
+				}
+				));
+		table.getColumnModel().getColumn(0).setPreferredWidth(135);
+		modelTray = (DefaultTableModel) table.getModel();
             
-            scrollPane.setViewportView(table);
-            setVisible(true);
-            setToBottomRight();
+		scrollPane.setViewportView(table);
+		setVisible(true);
+		setToBottomRight();
             
 	}
-	public void addR(Object object) {
-		modelTray.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
-		
-	}
-	public void setValueAt(String string, int currThread, int i) {
-	}
-	public void setToBottomRight() {
-	Point location = MouseInfo.getPointerInfo().getLocation();
+	
 	/* screen position check to always place tray window near tray*/
-	 if (location.x + this.getWidth() > screen.x + screen.width) {
-		 location.x = screen.x + screen.width - this.getWidth();
-        }
-
-        if (location.y + this.getHeight() > screen.y + screen.height) {
-        	location.y = screen.y + screen.height - this.getHeight();
-        }
-        this.setLocation(location);
+	public void setToBottomRight() {
+		Point location = MouseInfo.getPointerInfo().getLocation();
+		
+		if (location.x + this.getWidth() > screen.width) {
+			location.x = screen.width - this.getWidth();
+		}
+		if (location.y + this.getHeight() > screen.height) {
+			location.y = screen.height - this.getHeight();
+		}
+		this.setLocation(location);
 	}
 }

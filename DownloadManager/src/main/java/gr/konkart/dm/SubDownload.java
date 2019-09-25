@@ -17,10 +17,9 @@ public class SubDownload implements Runnable{
 	private String subDownloadId;
 	private String fileLoc;
 	private String location;
-	private long fileStartPos;
-	private long fileEndPos;
+	private long fileStartPos = 0;
+	private long fileEndPos = 1;
 	private long bytesDownloaded=0;
-	private long bytesDownloadedSession=0;
 	private byte Buffer[];
 	private boolean complete=false;
 	int downloadID;
@@ -32,7 +31,12 @@ public class SubDownload implements Runnable{
 	long oldtime;
 	long now;
 	long downed = 0L;
-	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location,boolean partial){
+	private URLConnection uc;
+	
+	/*
+	 * Partial subDownload constructor
+	 */
+	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location){
 
 		this.fileLoc=fileLoc;//URL to file
 		this.fileStartPos=fileStartPos;//start byte of the "to-download" range
@@ -42,62 +46,44 @@ public class SubDownload implements Runnable{
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
 		complete=false;
-		this.isPartial=partial;
-		}
+		this.isPartial=true;
+	}
+	
+	// Single part subDownload constructor
+	public SubDownload(String subDownloadId,String fileLoc,int bufferSize,int downloadID,String location){
+		this.fileLoc=fileLoc;//URL to file
+		Buffer = new byte[bufferSize];	
+		this.location=location;
+		this.subDownloadId=subDownloadId;//the temp file name
+		this.downloadID=downloadID;
+		complete=false;
+		this.isPartial=false;
+	}
 
 	public void run(){
 	
-		try{
+		try {
 			
 			paused=false;
 			URL url = new URL(fileLoc);
-			URLConnection uc = url.openConnection();
+			uc = url.openConnection();
 			uc.setRequestProperty("connection","Keep-Alive");
-			
+			uc.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36");
 			//partial file save location
 			File f = new File(location+subDownloadId);
 
-			
-			/*
-			 * if a non-partial download has been previously stopped, it will instead start over when it is to be resumed
-			 * 
-			 * @author KONSTANTINOS KARTOFIS
-			 */
-			if(isPartial==true) {
-			//if file exists already it reads its size in bytes and adds it to the initial number-byte to start download from
-				if (f.exists()) {
-					bytesDownloaded = f.length();
-					fileStartPos=fileStartPos+f.length();
-					
-					//check to avoid error:416 on requesting property
-					if(fileStartPos>=fileEndPos) {
-						fileStartPos--;
-					}
-					uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
-					outputStream = new FileOutputStream(f,true);
-				} else {
-					uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
-					outputStream = new FileOutputStream(f);
-				}
-			}
-
-			
+			checkAndResume(f);
 			
 			//gets the bytes stream
-			InputStream inputStream =  uc.getInputStream();
+			InputStream inputStream = uc.getInputStream();
 			byte[] buffer = Buffer;
-			if(fileStartPos<=fileEndPos) {
 			
-				while(bytesDownloadedSession < (fileEndPos - fileStartPos) && paused==false){
-					oldtime =System.currentTimeMillis();
-					while (paused==false && (bytesRead = inputStream.read(buffer)) != -1) {
-						outputStream.write(buffer, 0, bytesRead);
-						bytesDownloaded += bytesRead;
-						bytesDownloadedSession = bytesDownloaded;
-						speedLimitCheck();
-					} 
-				}
+			while ((bytesRead = inputStream.read(buffer))!=-1 && paused==false){
+				outputStream.write(buffer, 0, bytesRead);
+				bytesDownloaded += bytesRead;
+				speedLimitCheck();
 			}
+			
 			outputStream.close();
 			inputStream.close();
 			if(paused==false){
@@ -117,13 +103,41 @@ public class SubDownload implements Runnable{
 			}
 		}
 
-		}
+	}
 	
 	/*
 	 * speedLimitCheck(),getPause(),setIsNotPartial(),
-	 * setPause(),RateLimit()
+	 * setPause(),RateLimit(),checkAndResume()
 	 * 
 	 * @author KONSTANTINOS KARTOFIS
+	 */
+	
+	/*
+	 * if a non-partial download has been previously stopped, it will instead start over when it is to be resumed
+	 * else it will restart the download of a non partial download
+	 */
+	private void checkAndResume(File file) throws FileNotFoundException {
+		if(isPartial==true) {
+			//if file exists already it reads its size in bytes and adds it to the initial number-byte to start download from
+			if (file.exists()) {
+				bytesDownloaded = file.length();
+				fileStartPos=fileStartPos+file.length();
+					
+				//check to avoid error:416 on requesting property
+				if(fileStartPos>=fileEndPos) {
+					fileStartPos--;
+				}
+				outputStream = new FileOutputStream(file,true);
+			} else {
+				outputStream = new FileOutputStream(file);
+			}
+			uc.setRequestProperty("Range","bytes=" +(fileStartPos) + "-"+ fileEndPos);
+		} else {
+			outputStream = new FileOutputStream(file);
+		}
+	}
+	/*
+	 * checks if the limit has been exceeded and sleeps the download
 	 */
 	private void speedLimitCheck() throws InterruptedException {
 		if (r!=0 && downed>r) {

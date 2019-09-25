@@ -20,34 +20,35 @@ public class Torrent implements Runnable{
 	String fileLoc;
 	long startTime;
 	private boolean complete; //Completion flag
-	private String location;
-	private String folderName;
+	private String location,folderName;
 	private boolean stopped = false;
-	private int trayRow;
-	public Torrent(String fileLoc,String nameFolder,String location,int trayRow){//Torrent constructor
+	private int trayRow,downloadID;
+	public Torrent(int id,String fileLoc,String nameFolder,String location,int trayRow) {
 		this.fileLoc = fileLoc;
-		this.complete = false;
 		this.location = location;
 		this.folderName = nameFolder;
 		this.trayRow = trayRow;
+		this.downloadID = id;
 	}
-	volatile boolean paused=false; //Paused Flag
-	private long downloaded;//Downloaded Bytes
-	private long downloadedS;//Variable used in download speed(gets 'downloaded's value)
-	private int total;//total torrent pieces
-	private int piece;//completed pieces
-	private int perce;//percentage
+	volatile boolean paused=false;	// Paused Flag
+	private long downloaded;		// Downloaded Bytes
+	private long downloadedS;		// Variable used in download speed(gets 'downloaded's value)
+	private int total;				// total torrent pieces
+	private int piece;				// completed pieces
+	private int perce;				// percentage
 	@Override
 	public void run() {
-			System.setProperty("java.net.preferIPv4Stack" , "true");
-		
+		System.setProperty("java.net.preferIPv4Stack" , "true");
+		complete=false;
+		stopped=false;
+		paused=false;
 		//torrent client config	
 		Config config = new Config() {
 			//number of threads to use
-		    @Override
-		    public int getNumOfHashingThreads() {
-		        return Runtime.getRuntime().availableProcessors() * 4;
-		    }
+			@Override
+			public int getNumOfHashingThreads() {
+				return Runtime.getRuntime().availableProcessors() * 4;
+			}
 		};
 		
 		Duration dur = Duration.ofSeconds(60);
@@ -74,14 +75,14 @@ public class Torrent implements Runnable{
 		
 		// create client with a private runtime
 		BtClient client = Bt.client()
-		        .config(config)
-		        .storage(storage)
-		        .magnet(fileLoc)
-		        .autoLoadModules()
-		        .stopWhenDownloaded()
-		        .module(dhtModule)
-		        .selector(selector)
-		        .build();
+				.config(config)
+				.storage(storage)
+				.magnet(fileLoc)
+				.autoLoadModules()
+				.stopWhenDownloaded()
+				.module(dhtModule)
+				.selector(selector)
+				.build();
 		
 		startTime = System.currentTimeMillis();
 		//start client with callback every 1000ms
@@ -105,9 +106,15 @@ public class Torrent implements Runnable{
 			}
 		}, 1000).join();
 	}
-	//get downloaded data in Megabytes
-	public long getDownloaded() {
-		return (downloaded/1024)/1024;
+	//get downloaded data
+	public String getDownloaded() {
+		if(downloaded>1024000) {
+			return String.valueOf((downloaded/1024)/1024)+"MB";
+		} else if (downloaded>1024) {
+			return String.valueOf((downloaded/1024))+"KB";
+		} else {
+			return String.valueOf(downloaded)+"B";
+		}
 	}
 	//download speed calculation
 	public String getDownloadSpeed() {
@@ -121,7 +128,7 @@ public class Torrent implements Runnable{
 		}
 		if (current_speed>1000) {
 			current_speed=current_speed/1000;
-			return " "+String.format("%.3f",current_speed)+" MB/s ";
+			return " "+String.format("%.1f",current_speed)+" MB/s ";
 		} else {
 			return " "+String.format("%.0f",current_speed)+" KB/s ";
 		}
@@ -147,7 +154,7 @@ public class Torrent implements Runnable{
 	public boolean getStopped() {
 		return stopped;
 	}
-	public void setTorPaused() {//funtion that is called to pause/stop the torrent
+	public void setTorPaused() {
 		paused = true;
 	}
 	public boolean getPaused() {
@@ -165,8 +172,14 @@ public class Torrent implements Runnable{
 	public String getLocation() {
 		return location;
 	}
+	public int getDownloadID() {
+		return downloadID;
+	}
 	public void setLocation(String location) {
 		this.location = location;
+	}
+	public void setTrayRow(int tRow) {
+		this.trayRow = tRow;
 	}
 	
 }
