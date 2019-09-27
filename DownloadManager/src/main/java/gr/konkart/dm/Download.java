@@ -20,11 +20,12 @@ public class Download implements Runnable{
 	private int bufferSize = 2024;	//Buffer Size
 	private SubDownload sd[];		//Subdownloads array
 	private int downloadID;
-	private int complete = 0;		//Completion flag
+	private int complete = -2;		//Completion flag
 	private int activeSubConn;		//Active SubConnections(Subdownloads)counter
 	private long startTime;
 	private Boolean isPartial = null;		//Flag to check if webhost supports partial(multipart) download
 	int r=0;
+	private long bytesDownloadedSession = 0;
 	private String[] files;
 	private FileUtils futils = new FileUtils();
 	public URL url;
@@ -63,8 +64,8 @@ public class Download implements Runnable{
 
 		float current_speed;
 
-		if (bytesDownloaded > 0 ) {
-		current_speed = (float)( bytesDownloaded / (System.currentTimeMillis() - startTime));
+		if (bytesDownloadedSession > 0 ) {
+		current_speed = (float)( bytesDownloadedSession / (System.currentTimeMillis() - startTime));
 		} else {
 		current_speed = 0;
 		}
@@ -155,9 +156,11 @@ public class Download implements Runnable{
 		
 	//downloaded bytes calculation
 	public void calcBytesDownloaded() {
-		bytesDownloaded=0;	
+		bytesDownloaded=0;
+		bytesDownloadedSession = 0;	
 			for (int conn=0;conn<totConnections;conn++){
 				bytesDownloaded = bytesDownloaded + sd[conn].getBytesDownloaded();
+				bytesDownloadedSession = bytesDownloadedSession + sd[conn].getBytesDownloadedSession();
 			}
 	}
 		
@@ -206,7 +209,10 @@ public class Download implements Runnable{
 		
 	}
 		
+	public void calcBytesDownloadedSession() {
 		
+	}
+	
 	public void concatSub() {
 		   try {
 			   futils.concat(files,nameOfFile,location);

@@ -1158,20 +1158,14 @@ public class DownloadManager {
 						downloadcomplete = df.get(currThread).isDownloadComplete();//Flag
 						if (downloadcomplete == true) {
 							df.get(currThread).concatSub();
-							active = active-1;
-							if(rateState==true) {
-								downloadSpeedLimit(speedLimitNumber);
-							}
+							model.setValueAt("100%  0 KB/s",currThread,2);
+							trayframe.modelTray.setValueAt("100%",trayFrameRow,1);
 							break;
 						} else if(df.get(currThread).getPause()) {						
-							active=active-1;
-							if(rateState==true) {
-								downloadSpeedLimit(speedLimitNumber);
-							}
+							model.setValueAt(df.get(currThread).DownloadProgress()+"%  0 KB/s",currThread,2);
 							break;
 						}
-						gui.updateStatus(currThread,false,typeof,trayFrameRow);
-						   
+						gui.updateStatus(currThread,false,typeof,trayFrameRow);   
 					}
 					try {
 						Thread.sleep(1000);
@@ -1179,10 +1173,10 @@ public class DownloadManager {
 						e.printStackTrace();
 					}
 				}
-				if(failed==false && downloadcomplete==true) {
-					model.setValueAt("100%  0 KB/s",currThread,2);
-					trayframe.modelTray.setValueAt("100%",trayFrameRow,1);
-				}
+					active = active - 1;
+					if(rateState==true) {
+						downloadSpeedLimit(speedLimitNumber);
+					}
 			} else if (typeof=="Torrent") {
 				System.out.println("monitoring");
 				while(tr.get(currThread).getComplete() == false && tr.get(currThread).getStopped()==false){
@@ -1225,7 +1219,7 @@ public class DownloadManager {
 		}
 	}
 	//sets the download limit to all
-	public synchronized void  downloadSpeedLimit(double speedLimitNumber2) {
+	public synchronized void downloadSpeedLimit(double speedLimitNumber2) {
 		try {
 			Thread.sleep(300);
 		} catch (Exception e) {}

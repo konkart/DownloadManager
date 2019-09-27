@@ -27,6 +27,7 @@ public class SubDownload implements Runnable{
 	private volatile boolean paused = false;
 	FileOutputStream outputStream = null;
 	private boolean isPartial=false;
+	private long bytesDownloadedSession = 0;
 	boolean failed = false;
 	long oldtime;
 	long now;
@@ -45,7 +46,6 @@ public class SubDownload implements Runnable{
 		this.location=location;
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
-		complete=false;
 		this.isPartial=true;
 	}
 	
@@ -56,7 +56,6 @@ public class SubDownload implements Runnable{
 		this.location=location;
 		this.subDownloadId=subDownloadId;//the temp file name
 		this.downloadID=downloadID;
-		complete=false;
 		this.isPartial=false;
 	}
 
@@ -81,6 +80,7 @@ public class SubDownload implements Runnable{
 			while ((bytesRead = inputStream.read(buffer))!=-1 && paused==false){
 				outputStream.write(buffer, 0, bytesRead);
 				bytesDownloaded += bytesRead;
+				bytesDownloadedSession += bytesRead;
 				speedLimitCheck();
 			}
 			
@@ -150,6 +150,9 @@ public class SubDownload implements Runnable{
 		if(bytesRead>=0) {
 			downed=(long) (downed+bytesRead);
 		}
+	}
+	public long getBytesDownloadedSession() {
+		return bytesDownloadedSession;
 	}
 	public synchronized void setPause() {
 		paused = true;
