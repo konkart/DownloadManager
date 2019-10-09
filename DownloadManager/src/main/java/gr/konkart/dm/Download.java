@@ -89,46 +89,40 @@ public class Download implements Runnable{
 			uc = url.openConnection();
 			fileSize = uc.getContentLength();
 			if(isPartial==null) {
-				isPartial = "bytes".equals(uc.getHeaderField("Accept-Ranges"));
+				getPartial();
 			}
 		} catch (Exception e) {e.printStackTrace();}
 		//Download initialization
 		if (isPartial==true) {
 			doMultipart();	
 		} else {
-			System.out.println("Single");
 			doSinglePart();
 		}
 		pool.shutdown();
 	}
-		
+	//Multipart Download initialization
 	private void doMultipart() {
-		//Multipart Download initialization
+
 		sd = new SubDownload[totConnections];
 			
 		files =  new String[totConnections];
 			
-		//Dividing the file size to get size for each sub part
 		partsize= (long)(fileSize/totConnections);
 
 		//Part initialization
 		for (conn=0;conn<totConnections;conn++){
 				
-			//Last part initialization
 			if ( conn == (totConnections - 1)) {
 				fStartPos=conn*partsize;
 				fEndPos= fileSize;
 			}
-			//Parts initialization
 			else {
 				fStartPos=conn*partsize;
 				fEndPos= fStartPos + partsize - 1;
 			}
-			//part name and temporary extension
 			partname = nameOfFile + String.valueOf(conn) + ".dat";
-			//Subdownload creation
 			sd[conn] = new SubDownload(partname,fileLoc,fStartPos,fEndPos,bufferSize/5,downloadID,location);
-			files[conn] = sd[conn].getSubDownloadId();
+			files[conn] = partname;
 			startTime=System.currentTimeMillis();
 			pool.execute(sd[conn]);
 					
@@ -169,7 +163,7 @@ public class Download implements Runnable{
 	 * setRateLimit(),concatSub(),getTrayRow()
 	 * deleteSubFiles(),PauseDownload(),getPause(),
 	 * isDownloadComplete(),isDownloadFailed(),
-	 * doSinglePart()....
+	 * doSinglePart(),getPartial()....
 	 * 
 	 * @author KONSTANTINOS KARTOFIS
 	 */
@@ -187,7 +181,7 @@ public class Download implements Runnable{
 		sd[0] = new SubDownload(partname,fileLoc,bufferSize,downloadID,location);
 		startTime=System.currentTimeMillis();
 		pool.execute(sd[0]);
-		files[conn] = sd[conn].getSubDownloadId();
+		files[conn] = partname;
 		activeSubConn = activeSubConn + 1;
 		
 	}
@@ -208,9 +202,9 @@ public class Download implements Runnable{
 		}
 		
 	}
-		
-	public void calcBytesDownloadedSession() {
-		
+	
+	public void setPartial(boolean isPartial) {
+		this.isPartial = isPartial;
 	}
 	
 	public void concatSub() {
@@ -223,7 +217,22 @@ public class Download implements Runnable{
 		
 	//deletes the uneeded files
 	public void deleteSubFiles() {
-		if (pool.isTerminated()) {
+		if (files == null) {
+			if(isPartial) {
+				files =  new String[totConnections];
+				for (conn=0;conn<totConnections;conn++){
+					partname = nameOfFile + String.valueOf(conn) + ".dat";
+					files[conn] = partname;
+				}
+			} else {
+				files =  new String[1];
+				for (conn=0;conn<1;conn++){
+					partname = nameOfFile + String.valueOf(conn) + "single.dat";
+					files[conn] = partname;
+				}
+			}
+		}
+		if (pool==null || pool.isTerminated()) {
 			for(int fileid=0;fileid < totConnections;fileid++) {
 				futils.deleteFiles(new File(location+files[fileid]));
 			}
@@ -231,8 +240,12 @@ public class Download implements Runnable{
 	}
 	//pauses Sub Downloads
 	public void PauseDownload() {
-		for (int i=0;i<sd.length;i++) {
-			sd[i].setPause();
+		try {
+			for (int i=0;i<sd.length;i++) {
+				sd[i].setPause();
+			}
+		} catch (Exception e) {
+			
 		}
 	}
 	//checks if SubDownloads are paused
@@ -281,6 +294,12 @@ public class Download implements Runnable{
 			   }
 		}
 		return failed;
+	}
+	
+	public void getPartial() {
+		isPartial = "bytes".equals(uc.getHeaderField("Accept-Ranges"));
+		DatabaseHandler db = new DatabaseHandler();
+		db.updateDirPartial(isPartial,downloadID);
 	}
 		
 	public int getComplete() {

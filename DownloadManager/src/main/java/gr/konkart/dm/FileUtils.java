@@ -38,7 +38,7 @@ public class FileUtils{
 			}
 			in.close();
 		}
-		System.out.println(outPut);
+
 		out.close();
 	}
   	
@@ -90,14 +90,11 @@ public class FileUtils{
 				} else {
 					imgtype = BufferedImage.TYPE_INT_ARGB;
 				}
-				//create new image and draw our previous image on it
 				BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
 						bufferedImage.getHeight(), imgtype);
 				newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, new Color(0,0,0,0),null);
-				//write our image with the new extension (t)
 				ImageIO.write(newBufferedImage, extension, os);
-	
-				System.out.println("Done");
+
 	  				
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -111,33 +108,28 @@ public class FileUtils{
 	String[] command;
 	String[] commandFallback;
 	public void videoConv(String input,String extension) {
-		//File ffmpeg = new File("ffmpeg.exe");
 		String keepName[] = input.split("\\.");
-		System.out.println(input + keepName.length);
 		String file = keepName[0];
 		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+file+"."+extension};
 		commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+input+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+file+"."+extension};
-		String nameOfFile = input.substring(input.lastIndexOf('\\')+1)+"."+extension;
-		ffmpegConvert(file,nameOfFile);
+		String nameOfFile = file+"."+extension;
+		ffmpegConvert(input,nameOfFile);
 	}
 	//audio conversion using ffmpeg
 	public void audioConv(String input,String extension) {
-		//File ffmpeg = new File("ffmpeg.exe");
 		String keepName[] = input.split("\\.");
-		System.out.println(input + keepName.length);
 		String file = keepName[0];
 		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -speed fast -threads 4 "+file+"."+extension};
 		commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+input+" -speed fast -threads 4 "+file+"."+extension};
-		String nameOfFile = input.substring(input.lastIndexOf('\\')+1)+"."+extension;
-		ffmpegConvert(file,nameOfFile);
+		String nameOfFile = file+"."+extension;
+		ffmpegConvert(input,nameOfFile);
 	}
 	
 	public void ffmpegConvert(String input , String output) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		//executes cmd command and reads the output
-		FfmpegRender ff = new FfmpegRender(input.substring(input.lastIndexOf('\\')+1),output);
-		System.out.println("aaaaaaa");
+		FfmpegRender ff = new FfmpegRender(input.substring(input.lastIndexOf('\\')+1),output.substring(output.lastIndexOf('\\')+1));
 		Runnable task = () -> {
 			int erCode = 0;
 			try {

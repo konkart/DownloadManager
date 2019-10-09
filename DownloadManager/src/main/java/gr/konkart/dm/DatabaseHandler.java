@@ -16,20 +16,55 @@ public class DatabaseHandler {
 	private int newDownID,newTorID;					// the id number of the download entry
 	private int counterDow,counterTor;				// the ammout of downloads
 
-	// creates the database file if it doesnt exist
+	// creates the database file with the tables if it doesnt exist
 	public void createDB() {
 		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
 			if (conn != null) {
-				String sql = "CREATE TABLE IF NOT EXISTS direct (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text);";
+				String sql = "CREATE TABLE IF NOT EXISTS direct (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text,partial int);";
 				stmt.execute(sql);
 				sql = "CREATE TABLE IF NOT EXISTS torrent (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text);";
 				stmt.execute(sql);
-				stmt.close();
-				conn.close();
+				sql = "CREATE TABLE IF NOT EXISTS defaultFolder (folder TEXT);";
+				stmt.execute(sql);
+				sql = "INSERT INTO defaultFolder (folder) VALUES (\""+System.getProperty("user.home")+"\\Downloads\\"+"\");";
+				stmt.execute(sql);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/*
+	 * saves the new Default folder that user chose
+	 */
+	public void setDefaultFolder(String folder,String oldFolder) {
+		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
+			if (conn != null) {
+				String sql = "UPDATE defaultFolder SET folder == \""+folder+"\" WHERE folder == \""+oldFolder+"\";";
+				stmt.execute(sql);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * gets the default Download folder that was saved some time on the past
+	 */
+	public String getDefaultFolder() {
+		String folder = null;
+		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
+			if (conn != null) {
+				String sql = "SELECT * FROM defaultFolder";
+				ResultSet rs = stmt.executeQuery(sql);
+				while (rs.next()) {
+					folder = rs.getString(1).toString();
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return folder;
 	}
 	
 	// inserts the direct download information to the "direct" table
@@ -38,8 +73,6 @@ public class DatabaseHandler {
 			if (conn != null) {
 				String sql = "INSERT INTO direct (id,name,URL,savedLocation,date) VALUES ("+d.get(id).getDownloadID()+",\""+d.get(id).getNameOfFile()+"\",\""+d.get(id).getFileLoc()+"\",\""+d.get(id).getLocation()+"\",\""+getDateTime()+"\");";
 				stmt.execute(sql);
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -52,8 +85,6 @@ public class DatabaseHandler {
 			if (conn != null) {
 				String sql = "UPDATE direct SET savedLocation == \""+newLoc+"\\"+"\" WHERE savedLocation == \""+oldLoc+"\" AND id == "+id+";";
 				stmt.execute(sql);
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -74,37 +105,62 @@ public class DatabaseHandler {
 					int id = Integer.parseInt(results.getString(1));
 					String f = results.getString(4)+"\\"+results.getString(2);
 					File file;
-					if ( (file = new File(f)).exists()) {
-						long size = file.length();
-						String[] item1 = {results.getString(1).toString(),results.getString(2),"100%  0 KB/s",getFileSize(size),results.getString(5),results.getString(3)};
-						item = item1;
-					} else if (new File(f+"single.dat").exists() || new File(f+"1.dat").exists()) {
-						String[] item1 = {results.getString(1).toString(),results.getString(2),"0%  0 KB/s","Paused",results.getString(5),results.getString(3)};
-						item = item1;
-					} else {
-						String[] item1 = {results.getString(1).toString(),results.getString(2),"Not Found","Not Found",results.getString(5),results.getString(3)};
-						item = item1;
-					}
-					if (id>newDownID) {
+					if (id > newDownID) {
 						newDownID = id;
 					} else if (id == newDownID) {
 						newDownID = id+1;
 					}
+					if ( (file = new File(f)).exists()) {
+						long size = file.length();
+						String[] item1 = {String.valueOf(id),results.getString(2),"100%  0 KB/s",getFileSize(size),results.getString(5),results.getString(3)};
+						item = item1;
+					} else if (new File(f+"single.dat").exists() || new File(f+"1.dat").exists()) {
+						String[] item1 = {String.valueOf(id),results.getString(2),"0%  0 KB/s","Paused",results.getString(5),results.getString(3)};
+						item = item1;
+					} else {
+						String[] item1 = {String.valueOf(id),results.getString(2),"Not Found","Not Found",results.getString(5),results.getString(3)};
+						item = item1;
+					}
 					
 					counterDow = counterDow + 1;
 					Download download = new Download(id, results.getString(3), results.getString(2), results.getString(4), -1);
+					int partialValue = Integer.parseInt(results.getString(6));
+					if (partialValue==1) {
+						download.setPartial(true);
+					} else if (partialValue==0) {
+						download.setPartial(false);
+					}
 					window.addDown(download);
 					
 					t.add(item);
 					
 				}
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return t;
+	}
+	
+	/*
+	 *  Updates the partial value so program doesnt have to redetermine if a download is supporting multipart
+	 */
+	public void updateDirPartial(boolean partial, int id) {
+		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
+			int partialValue;
+			if (partial==true) {
+				partialValue = 1;
+			} else {
+				partialValue = 0;
+			}
+			if (conn != null) {
+				String sql = "UPDATE direct SET partial == "+partialValue+" WHERE id == "+id+";";
+				
+				stmt.execute(sql);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// updates the location the torrent file has been saved on local drive
@@ -116,8 +172,6 @@ public class DatabaseHandler {
 				String sql = "UPDATE torrent SET savedLocation == \""+newLo+"\\"+"\" WHERE savedLocation == \""+old+"\" AND id == "+id+";";
 				
 				stmt.execute(sql);
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -130,8 +184,6 @@ public class DatabaseHandler {
 			if (conn != null) {
 				String sql = "INSERT INTO torrent (id,name,URL,savedLocation,date) VALUES ("+t.get(id).getDownloadID()+",\""+t.get(id).getFolderName()+"\",\""+t.get(id).getMagnetURI()+"\",\""+t.get(id).getLocation()+"\",\""+getDateTime()+"\");";
 				stmt.execute(sql);
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -148,26 +200,26 @@ public class DatabaseHandler {
 				while (results.next()) {
 					String[] item;
 					String f = results.getString(4)+"\\"+results.getString(2);
+					int id = Integer.parseInt(results.getString(1));
+					if (id>newTorID) {
+						newTorID = id;
+					} else if (id == newTorID) {
+						newTorID = id+1;
+					}
 					if (new File(f).exists()) {
-						String[] item1 = {results.getString(1).toString(),results.getString(2),"00%  0 KB/s","Stopped",results.getString(5),results.getString(3)};
+						String[] item1 = {String.valueOf(id),results.getString(2),"00%  0 KB/s","Stopped",results.getString(5),results.getString(3)};
 						item = item1;
 					} else {
-						String[] item1 = {results.getString(1).toString(),results.getString(2),"0%  0 KB/s","0",results.getString(5),results.getString(3)};
+						String[] item1 = {String.valueOf(id),results.getString(2),"0%  0 KB/s","0",results.getString(5),results.getString(3)};
 						item = item1;
 					}
-					if (Integer.parseInt(results.getString(1))>newTorID) {
-						newTorID = Integer.parseInt(results.getString(1));
-					} else if (Integer.parseInt(results.getString(1)) == newTorID) {
-						newTorID = Integer.parseInt(results.getString(1))+1;
-					}
 					counterTor = counterTor + 1;
-					Torrent tr = new Torrent(Integer.parseInt(results.getString(1)), results.getString(3), results.getString(2), results.getString(4), -1);
-					window.addTor(tr,Integer.parseInt(results.getString(1)));
+					Torrent tr = new Torrent(id, results.getString(3), results.getString(2), results.getString(4), -1);
+					tr.setTorPaused();
+					window.addTor(tr);
 					t.add(item);
 					
 				}
-				stmt.close();
-				conn.close();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -182,8 +234,6 @@ public class DatabaseHandler {
 				String sql = "DELETE FROM torrent WHERE id=="+id+"";
 				stmt.execute(sql);
 			}
-			stmt.close();
-			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -196,8 +246,6 @@ public class DatabaseHandler {
 				String sql = "DELETE FROM direct WHERE id=="+id+"";
 				stmt.execute(sql);
 			}
-			stmt.close();
-			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

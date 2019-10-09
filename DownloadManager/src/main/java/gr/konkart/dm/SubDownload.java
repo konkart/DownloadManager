@@ -33,10 +33,7 @@ public class SubDownload implements Runnable{
 	long now;
 	long downed = 0L;
 	private URLConnection uc;
-	
-	/*
-	 * Partial subDownload constructor
-	 */
+
 	public SubDownload(String subDownloadId,String fileLoc,long fileStartPos,long fileEndPos,int bufferSize,int downloadID,String location){
 
 		this.fileLoc=fileLoc;//URL to file
@@ -125,7 +122,9 @@ public class SubDownload implements Runnable{
 					
 				//check to avoid error:416 on requesting property
 				if(fileStartPos>=fileEndPos) {
-					fileStartPos--;
+					while (fileStartPos>=fileEndPos) {
+						fileStartPos--;
+					}
 				}
 				outputStream = new FileOutputStream(file,true);
 			} else {

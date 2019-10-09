@@ -50,20 +50,17 @@ public class URLHandler {
 						fileName = "index" + urlObj.getHost();
 					}
 					String ext = con.getContentType();
-					System.out.println(fileName);
 					try {
 						ext = ext.substring(ext.lastIndexOf('/')+1).split(";")[0];
 					} catch (Exception e) {ext = null;}
 					if(ext!=null && !ext.equals("unknown")) {
 						if (!fileName.matches("[a-zA-Z0-9]*[.][a-zA-Z]+")) {
 							nameOfTheFile = fileName+"."+ext;
-							System.out.println("lol");
 						} else {
 							nameOfTheFile = fileName;
 						}
 					}
 			}
-			System.out.println(nameOfTheFile+" aaaa");
 		}catch(Exception e) {e.printStackTrace();}
 		return nameOfTheFile;
 	}

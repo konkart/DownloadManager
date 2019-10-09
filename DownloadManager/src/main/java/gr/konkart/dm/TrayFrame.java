@@ -40,7 +40,7 @@ public class TrayFrame extends JFrame {
 				));
 		table.getColumnModel().getColumn(0).setPreferredWidth(135);
 		modelTray = (DefaultTableModel) table.getModel();
-            
+		table.setDefaultEditor(Object.class, null);
 		scrollPane.setViewportView(table);
 		setVisible(true);
 		setToBottomRight();

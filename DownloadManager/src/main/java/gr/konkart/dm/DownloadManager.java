@@ -89,7 +89,7 @@ public class DownloadManager {
 		openFolder,mp4,webm,avi,flv,mp3,ogg,acc,wav,jpg,gif,bmp,png;
 	JMenu sectionsMenu;
 	JTabbedPane tabbedPane;
-	String homeDefault = System.getProperty("user.home")+"\\Downloads\\";
+	static String homeDefault = System.getProperty("user.home")+"\\Downloads\\";
 	JComboBox<Object> speedCmb;
 	volatile double speedLimitNumber=0;
 	volatile int active = 0;
@@ -118,6 +118,13 @@ public class DownloadManager {
 					}
 					torrentID = db.getTorCount();
 					tTorID = db.getTorID();
+					String tmpFolder;
+					tmpFolder = db.getDefaultFolder();
+
+					if (tmpFolder!=null) {
+						homeDefault = tmpFolder;
+						
+					}
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -177,7 +184,8 @@ public class DownloadManager {
 	private void initialize() {
 		
 		frame = new JFrame();
-		frame.setBounds(100, 100, 530, 450);
+		frame.setResizable(false);
+		frame.setBounds(100, 100, 520, 438);
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
 		frame.getContentPane().setLayout(null);
 		
@@ -212,7 +220,6 @@ public class DownloadManager {
 		scrollPane.setViewportView(table_1);
 		model = (DefaultTableModel) table_1.getModel();
 		table_1.setDefaultEditor(Object.class, null);
-		//model.addRow(new Object[]{"Column 1", "Column 2", "Column 3","Column 4"});
 		
 		textField = new JTextField();
 		textField.setBounds(47, 11, 329, 20);
@@ -333,11 +340,10 @@ public class DownloadManager {
 					}
 					downloadSpeedLimit(speedLimitNumber);
 					rateState=true;
-					System.out.println("button is selected");
 				} else if (ev.getStateChange()==ItemEvent.DESELECTED){
 					downloadSpeedLimit(0);
 					rateState=false;
-					System.out.println("button is not selected");
+
 				}
 			}
 		});
@@ -366,6 +372,7 @@ public class DownloadManager {
 			}
 		));
 		table_2.getColumnModel().getColumn(0).setPreferredWidth(20);
+		table_2.setDefaultEditor(Object.class, null);
 		scrollPane_1.setViewportView(table_2);
 		
 		JSpinner spinner = new JSpinner();
@@ -410,7 +417,9 @@ public class DownloadManager {
 				fchooser.setAcceptAllFileFilterUsed(false);
 				fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+					String oldFolder = homeDefault;
 					homeDefault = fchooser.getSelectedFile().getAbsolutePath()+"\\";
+					db.setDefaultFolder(homeDefault,oldFolder);
 				}
 			}
 		});
@@ -430,7 +439,6 @@ public class DownloadManager {
 				long dateToS = (((Long) spinner.getValue() * 24)*60)*60;
 				long hoursToS = ((Long) spinner_1.getValue() *60)*60;
 				long minToS = (Long) spinner_2.getValue() *60;
-				System.out.println(dateToS+" "+hoursToS+" "+minToS);
 				long timer =  dateToS+hoursToS+minToS;
 				int tmpID = 0;
 				String type = URLHandler.getUriType(textField.getText());
@@ -523,38 +531,38 @@ public class DownloadManager {
 		openFolder = new JMenuItem("Open folder");
 		popup.add(openFolder);
 		move.setVisible(false);
-	    pause = new JMenuItem("Pause");
-	    popup.add(pause);
-	    resume = new JMenuItem("Resume");
-	    popup.add(resume);
-	    remove = new JMenuItem("Remove");
-	    popup.add(remove);
-	    copyToCl = new JMenuItem("Copy URL");
-	    popup.add(copyToCl);
+		pause = new JMenuItem("Pause");
+		popup.add(pause);
+		resume = new JMenuItem("Resume");
+		popup.add(resume);
+		remove = new JMenuItem("Remove");
+		popup.add(remove);
+		copyToCl = new JMenuItem("Copy URL");
+		popup.add(copyToCl);
 	    //Convertion menu
-	    sectionsMenu = new JMenu("Convert to..");
-	    sectionsMenu.setVisible(false);
-	    //Videoformats
-	    mp4 = new JMenuItem("mp4");
-	    sectionsMenu.add(mp4);
-	    flv = new JMenuItem("flv");
-	    sectionsMenu.add(flv);
-	    avi = new JMenuItem("avi");
-	    sectionsMenu.add(avi);
-	    webm = new JMenuItem("webm");
-	    sectionsMenu.add(avi);
-	    //audioFormats
-	    mp3 = new JMenuItem("mp3");
-	    sectionsMenu.add(mp3);
-	    wav = new JMenuItem("wav");
-	    sectionsMenu.add(wav);
-	    ogg = new JMenuItem("ogg");
-	    sectionsMenu.add(ogg);
-	    acc = new JMenuItem("acc");
-	    sectionsMenu.add(acc);
-	    //image formats
-	    png = new JMenuItem("png");
-	    sectionsMenu.add(png);
+		sectionsMenu = new JMenu("Convert to..");
+		sectionsMenu.setVisible(false);
+		//Videoformats
+		mp4 = new JMenuItem("mp4");
+		sectionsMenu.add(mp4);
+		flv = new JMenuItem("flv");
+		sectionsMenu.add(flv);
+		avi = new JMenuItem("avi");
+		sectionsMenu.add(avi);
+		webm = new JMenuItem("webm");
+		sectionsMenu.add(avi);
+		//audioFormats
+		mp3 = new JMenuItem("mp3");
+		sectionsMenu.add(mp3);
+		wav = new JMenuItem("wav");
+		sectionsMenu.add(wav);
+		ogg = new JMenuItem("ogg");
+		sectionsMenu.add(ogg);
+		acc = new JMenuItem("acc");
+		sectionsMenu.add(acc);
+		//image formats
+		png = new JMenuItem("png");
+		sectionsMenu.add(png);
 	    jpg = new JMenuItem("jpg");
 	    sectionsMenu.add(jpg);
 	    gif = new JMenuItem("gif");
@@ -567,7 +575,7 @@ public class DownloadManager {
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
 	    table_2.addMouseListener(popupListener);
-		}	
+	}	
 	
 	
 	
@@ -579,8 +587,24 @@ public class DownloadManager {
 		/*
 		 * method that will change our popup menu appearance,depending on the status of the download
 		 */
-	    public void mousePressed(MouseEvent e) {
-	    	sectionsMenu.setVisible(false);
+		public void mousePressed(MouseEvent e) {
+			int tabActive = tabbedPane.getSelectedIndex();
+			if (tabActive==0) {
+				int row = table_1.rowAtPoint(e.getPoint());
+				if (row > -1) {
+					table_1.setRowSelectionInterval(row, row);
+				} else {
+					table_1.clearSelection();
+				}
+			} else {
+				int row = table_2.rowAtPoint(e.getPoint());
+				if (row > -1) {
+					table_2.setRowSelectionInterval(row, row);
+				} else {
+					table_2.clearSelection();
+				}
+			}
+			sectionsMenu.setVisible(false);
 			open.setVisible(false);
 			delete.setVisible(false);
 			move.setVisible(false);
@@ -589,10 +613,10 @@ public class DownloadManager {
 			resume.setText("Resume");
 			remove.setVisible(false);
 			scheduleCancel.setVisible(false);
-	    	if (tabbedPane.getSelectedIndex()==1) {
-	    		row = table_2.getSelectedRow();
-	    		progress = table_2.getModel().getValueAt(row, 2).toString();
-	    		String status = table_2.getModel().getValueAt(row, 3).toString();
+			if (tabActive==1) {
+				row = table_2.getSelectedRow();
+				progress = table_2.getModel().getValueAt(row, 2).toString();
+				String status = table_2.getModel().getValueAt(row, 3).toString();
 				String percentSplit[] = progress.split("%");
 				percent = percentSplit[0];
 				int per = Integer.parseInt(percent);
@@ -620,23 +644,22 @@ public class DownloadManager {
 					scheduleCancel.setVisible(true);
 					delete.setVisible(false);
 				}
-	    	}
-	    	if (tabbedPane.getSelectedIndex()==0) {
-	    		delete.setVisible(true);
-	        	row = table_1.getSelectedRow();
-	        	file = df.get(row).getNameOfFile();
-		        location = df.get(row).getLocation();
-		        try {
-		        	Path source = Paths.get(location+file);
-		        	if(source.toFile().exists()) {
+			} else {
+				delete.setVisible(true);
+				row = table_1.getSelectedRow();
+				file = df.get(row).getNameOfFile();
+				location = df.get(row).getLocation();
+				try {
+					Path source = Paths.get(location+file);
+					if(source.toFile().exists()) {
 				        
-		        		fileMIME = Files.probeContentType(source).split("/");
-		        		filetype = fileMIME[0].toString();
-		        	}
-		        } catch (Exception e1) {
-		        	System.out.println("Exception FileMIME");
-		        	e1.printStackTrace();
-		        }
+						fileMIME = Files.probeContentType(source).split("/");
+						filetype = fileMIME[0].toString();
+					}
+				} catch (Exception e1) {
+					System.out.println("Exception FileMIME");
+					e1.printStackTrace();
+				}
 		        
 				progress = table_1.getModel().getValueAt(row, 2).toString();
 				String status = table_1.getModel().getValueAt(row, 3).toString();
@@ -712,393 +735,377 @@ public class DownloadManager {
 					pause.setVisible(true);
 					resume.setText("Resume");
 				}
-	        }
-	    }
+			}
+		}
 	        
 
-	    public void mouseReleased(MouseEvent e) {
-	    	showPopup(e);
-	    }
+		public void mouseReleased(MouseEvent e) {
+			showPopup(e);
+		}
 	    
-	    public PopupListener() {
-	    //method do delete the download from the driver
-	    delete.addActionListener(new ActionListener() {
+		public PopupListener() {
+			int tabAcive = tabbedPane.getSelectedIndex();
+			//method do delete the download from the driver
+			delete.addActionListener(new ActionListener() {
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				
-				if(tabbedPane.getSelectedIndex()==0) {
-					row = table_1.getSelectedRow();
-					file = df.get(row).getNameOfFile();
-					location = df.get(row).getLocation();
-					File filetoDelete= new File(location+file);
-					if(filetoDelete.exists()) {
-						FileUtils de = new FileUtils();
-						if (de.deleteFiles(filetoDelete)) {
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					
+					if(tabAcive==0) {
+						row = table_1.getSelectedRow();
+						file = df.get(row).getNameOfFile();
+						location = df.get(row).getLocation();
+						File filetoDelete= new File(location+file);
+						if(filetoDelete.exists()) {
+							FileUtils de = new FileUtils();
+							if (de.deleteFiles(filetoDelete)) {
+								table_1.getModel().setValueAt("Deleted",row, 3);
+								table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
+							}
+				        } else {
+							df.get(row).PauseDownload();
+							df.get(row).deleteSubFiles();
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {e.printStackTrace();}
 							table_1.getModel().setValueAt("Deleted",row, 3);
 							table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
 						}
-			        } else {
-						df.get(row).PauseDownload();
-						while (df.get(row).pool.isTerminated()==false) {
-							try {
-								Thread.sleep(200);
-							} catch (InterruptedException e) {e.printStackTrace();}
-						}
-						df.get(row).deleteSubFiles();
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {e.printStackTrace();}
-						table_1.getModel().setValueAt("Deleted",row, 3);
-						table_1.getModel().setValueAt("0%  0 KB/s",row, 2);
 					}
-				}
-				if(tabbedPane.getSelectedIndex()==1) {
-					row = table_2.getSelectedRow();
-			        location = tr.get(row).getLocation();
-			        file = tr.get(row).getFolderName();
-					File foldertoDelete= new File(location+file+"\\");
-					if(foldertoDelete.exists()) {
-						FileUtils futil = new FileUtils();
-						
-						futil.deleteFiles(foldertoDelete);
-						table_2.getModel().setValueAt("Deleted", row, 3);
-						table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
-			        }
-				}
-			}
-	    	
-	    });
-	    
-	    remove.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(tabbedPane.getSelectedIndex()==0) {
-					row = table_1.getSelectedRow();
-					model.removeRow(row);
-					db.deleteDir(df.get(row).getDownloadID());
-					df.remove(row);
-					downloadID = downloadID -1;
-				} else if(tabbedPane.getSelectedIndex()==1) {
-					row = table_2.getSelectedRow();
-					model2.removeRow(row);
-					db.deleteTor(tr.get(row).getDownloadID());
-					tr.remove(row);
-					torrentID = torrentID-1;
-				}
-			}
-	    });
-	    /* method to move file to different location in the drive */
-	    move.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(tabbedPane.getSelectedIndex()==0) {
-					row = table_1.getSelectedRow();
-					file = df.get(row).getNameOfFile();
-					location = df.get(row).getLocation();
-					JFileChooser fchooser = new JFileChooser(new File(location));
-					fchooser.setAcceptAllFileFilterUsed(false);
-					fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-						try {
-							Files.move(Paths.get(location+file), Paths.get(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file),StandardCopyOption.REPLACE_EXISTING);
-							df.get(row).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
-							db.updateLocDir(location, fchooser.getSelectedFile().getAbsolutePath(), df.get(row).getDownloadID());
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-					}
-				} else if(tabbedPane.getSelectedIndex()==1) {
-					row = table_2.getSelectedRow();
-			        file = tr.get(row).getFolderName();
-			        location = tr.get(row).getLocation();
-					File foldertoMove = new File(location+file+"\\");
-					JFileChooser fchooser = new JFileChooser(foldertoMove.getParent());
-					fchooser.setAcceptAllFileFilterUsed(false);
-					fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-						try {
-							FileUtils futils = new FileUtils();
-							futils.moveDir(foldertoMove, new File(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file));
-							futils.deleteFiles(foldertoMove);
-							tr.get(row).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
-							db.updateLocTor(location, fchooser.getSelectedFile().getAbsolutePath(), tr.get(row).getDownloadID());
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-					}
-				}
-			}
-	    	
-	    });
-	    /*
-	     * method to open the file ,or the download folder in case of the torrent
-	     */
-	    open.addActionListener(new ActionListener() {
-	    	
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if(tabbedPane.getSelectedIndex()==0) {
-				row = table_1.getSelectedRow();
-				file = df.get(row).getNameOfFile();
-				location = df.get(row).getLocation();
-				File filetoOpen = new File(location+file);
-				Desktop desktop = Desktop.getDesktop();
-		        if(filetoOpen.exists()) {
-					try {
-						desktop.open(filetoOpen);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-		        }
-				}
-			}
-	    	
-	    });
-	    
-	    openFolder.addActionListener(new ActionListener() {
-	    	
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if(tabbedPane.getSelectedIndex()==0) {
-					row = table_1.getSelectedRow();
-					file = df.get(row).getNameOfFile();
-					location = df.get(row).getLocation();
-					File filetoOpento = new File(location+file);
-					if (filetoOpento.exists()) {
-							openFolderS(location,file);
-							//desktop.open(filetoOpen);
-					}
-				} else if(tabbedPane.getSelectedIndex()==1) {
-					row = table_2.getSelectedRow();
-					file = tr.get(row).getFolderName();
-					location = tr.get(row).getLocation();
-					File filetoOpen = new File(location+file);
-					if(filetoOpen.exists()) {
-						openFolderS(location,file);
-					}
-				}
-			}
-	    });
-	    
-	    //cancels the scheduled download
-	    scheduleCancel.addActionListener(new ActionListener() {
-	    	
-	    	@Override
-	    	public void actionPerformed(ActionEvent arg0) {
-	    		if(tabbedPane.getSelectedIndex()==0) {
-	    			row = table_1.getSelectedRow();
-	    			Dmap.get(df.get(row)).getScheduler().cancel(true);
-	    			Dmap.remove(df.get(row));
-	    			scheduled = scheduled - 1;
-	    			table_1.getModel().setValueAt("Deleted", row, 2);
-	    			table_1.getModel().setValueAt("Deleted", row, 3);
-	    		} else if (tabbedPane.getSelectedIndex()==1) {
-	    			row = table_2.getSelectedRow();
-	    			Tmap.get(tr.get(row)).getScheduler().cancel(true);
-	    			Tmap.remove(tr.get(row));
-	    			scheduled = scheduled - 1;
-	    			table_2.getModel().setValueAt("Deleted", row, 2);
-	    			table_2.getModel().setValueAt("Deleted", row, 3);
-	    		}
-	    	}
-	    });
-	    
-	    /*
-	     * methods to convert the file to the format that is clicked
-	     */
-	    mp4.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(0,"mp4",location);
-			}
-	    });
-	    webm.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(0,"webm",location);
-			}
-	    });
-	    avi.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(0,"avi",location);
-			}
-	    });
-	    flv.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(0,"flv",location);
-			}
-	    });
-	    mp3.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(2,"mp3",location);
-			}
-	    });
-	    ogg.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(2,"ogg",location);
-			}
-	    });
-	    acc.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(2,"acc",location);
-			}
-	    });
-	    wav.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(2,"wav",location);
-			}
-	    });
-	    png.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(1,"png",location);
-			}
-	    });
-	    bmp.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(1,"bmp",location);
-			}
-	    });
-	    gif.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (filetype.equals("video")) {
-					getFileandConv(0,"gif",location);
-				} else {
-					getFileandConv(1,"gif",location);
-				}
-			}
-	    });
-	    jpg.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				getFileandConv(1,"jpg",location);
-			}
-	    });
-	    //method to copy URL to clipboard	
-	    copyToCl.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(tabbedPane.getSelectedIndex()==0) {
-					type = "URL";
-				} else {type="Torrent";}
-				if (type=="URL") {
-					row = table_1.getSelectedRow();
-					StringSelection stringSelection = new StringSelection(df.get(row).getFileLoc());
-					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-					clipboard.setContents(stringSelection, null);
-				} else if (type=="Torrent") {
-					row = table_2.getSelectedRow();
-					StringSelection stringSelection = new StringSelection(tr.get(row).getMagnetURI());
-					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-					clipboard.setContents(stringSelection, null);
-				}
-				
-				
-			}
-	    });
-	    /*
-	     * Pause button,sets the pause flag variable to true,stopping the download,
-	     * whose flag variable "complete" is not changed
-	     */
-	    pause.addActionListener(new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
-
-					if(tabbedPane.getSelectedIndex()==0) {
-						type = "URL";
-					} else {type="Torrent";}
-					int column = 0;
-					if (type=="URL") {
-						
-						row = table_1.getSelectedRow();
-	    				//pool.shutdownNow();
-	    				df.get(row).PauseDownload();
-	    				if(rateState==true) {
-							downloadSpeedLimit(speedLimitNumber);
-						}
-					} else {
+					if(tabAcive==1) {
 						row = table_2.getSelectedRow();
-						value = table_2.getModel().getValueAt(row, column).toString();
-						tr.get(row).setTorPaused();
+				        location = tr.get(row).getLocation();
+				        file = tr.get(row).getFolderName();
+						File foldertoDelete= new File(location+file+"\\");
+						if(foldertoDelete.exists()) {
+							FileUtils futil = new FileUtils();
+							
+							futil.deleteFiles(foldertoDelete);
+							table_2.getModel().setValueAt("Deleted", row, 3);
+							table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
+				        }
 					}
-		
-			  }
-		});
-	    /*
-	     * Resume button,creates new download object with the same args as the one from the selected row
-	     * and starts the download,SubDownload class has file checks to achieve the resume fuctionality,
-	     * torrent is handled by the library
-	     */
-	    resume.addActionListener(new ActionListener() {
-
-	    	public void actionPerformed(ActionEvent e) {
-	    		
-	    		if(tabbedPane.getSelectedIndex()==0) {
-	    			type = "URL";
-	    		} else {type="Torrent";}
-	    		if (type=="URL") {
-	    			row = table_1.getSelectedRow();
-	    			String fileN = df.get(row).getNameOfFile();
-	    			int tRow = df.get(row).getTrayRow();
-	    			if (tRow==-1) {
-	    				tRow = trayFrameRow;
-	    				String[] item = {fileN,"0%"};
-	    				trayframe.modelTray.addRow(item);
-	    				trayFrameRow = trayFrameRow +1;
-	    			}
-	    			df.get(row).setTrayRow(tRow);
-	    			try {
-	    				if(df.get(row).getPause()==true || df.get(row).getComplete()==1) {
-	    					Monitor dMonitor = new Monitor(window,row,type,tRow);
-	    					pool.execute(df.get(row));
-	    					pool.execute(dMonitor);
-	    					active=active+1;
-	    					if(rateState==true) {
-	    						downloadSpeedLimit(speedLimitNumber);
-	    					}
-	    				}
-	    			}catch(Exception e1) {
-	    				e1.printStackTrace();
-	    			}
-	    		} else if (type=="Torrent") {
-	    			row = table_2.getSelectedRow();
-	    			String NameTo = tr.get(row).getFolderName();
-	    			int tRow = tr.get(row).getTrayRow();
-	    			if (tRow==-1) {
-	    				tRow = trayFrameRow;
-	    				String[] item = {NameTo,"0%"};
-	    				trayframe.modelTray.addRow(item);
-	    				trayFrameRow = trayFrameRow +1;
-	    			}
-	    			tr.get(row).setTrayRow(tRow);
-	    			if(tr.get(row).getPaused()==true || tr.get(row).getComplete()==true) {
-	    				Monitor dMonitor = new Monitor(window,row,type,tRow);
-	    				pool.execute(tr.get(row));
-	    				pool.execute(dMonitor);
-	    			}
-	    		}
-	    	}
-
+				}
+		    	
+		    });
+	    
+			remove.addActionListener(new ActionListener() {
+	
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if(tabAcive==0) {
+						row = table_1.getSelectedRow();
+						model.removeRow(row);
+						db.deleteDir(df.get(row).getDownloadID());
+						df.remove(row);
+						downloadID = downloadID -1;
+					} else if(tabAcive==1) {
+						row = table_2.getSelectedRow();
+						model2.removeRow(row);
+						db.deleteTor(tr.get(row).getDownloadID());
+						tr.remove(row);
+						torrentID = torrentID-1;
+					}
+				}
+			});
+			/* method to move file to different location in the drive */
+			move.addActionListener(new ActionListener() {
+	
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if(tabAcive==0) {
+						row = table_1.getSelectedRow();
+						file = df.get(row).getNameOfFile();
+						location = df.get(row).getLocation();
+						JFileChooser fchooser = new JFileChooser(new File(location));
+						fchooser.setAcceptAllFileFilterUsed(false);
+						fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+						if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+							try {
+								Files.move(Paths.get(location+file), Paths.get(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file),StandardCopyOption.REPLACE_EXISTING);
+								df.get(row).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
+								db.updateLocDir(location, fchooser.getSelectedFile().getAbsolutePath(), df.get(row).getDownloadID());
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+						}
+					} else if(tabAcive==1) {
+						row = table_2.getSelectedRow();
+				        file = tr.get(row).getFolderName();
+				        location = tr.get(row).getLocation();
+						File foldertoMove = new File(location+file+"\\");
+						JFileChooser fchooser = new JFileChooser(foldertoMove.getParent());
+						fchooser.setAcceptAllFileFilterUsed(false);
+						fchooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+						if (fchooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+							try {
+								FileUtils futils = new FileUtils();
+								futils.moveDir(foldertoMove, new File(fchooser.getSelectedFile().getAbsolutePath()+"\\"+file));
+								futils.deleteFiles(foldertoMove);
+								tr.get(row).setLocation(fchooser.getSelectedFile().getAbsolutePath()+"\\");
+								db.updateLocTor(location, fchooser.getSelectedFile().getAbsolutePath(), tr.get(row).getDownloadID());
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+						}
+					}
+				}
+		    	
+		    });
+		    /*
+		     * method to open the file ,or the download folder in case of the torrent
+		     */
+			open.addActionListener(new ActionListener() {
+		    	
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					if(tabAcive==0) {
+					row = table_1.getSelectedRow();
+					file = df.get(row).getNameOfFile();
+					location = df.get(row).getLocation();
+					File filetoOpen = new File(location+file);
+					Desktop desktop = Desktop.getDesktop();
+			        if(filetoOpen.exists()) {
+						try {
+							desktop.open(filetoOpen);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+			        }
+					}
+				}
+		    	
+		    });
+	    
+			openFolder.addActionListener(new ActionListener() {
+		    	
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					if(tabAcive==0) {
+						row = table_1.getSelectedRow();
+						file = df.get(row).getNameOfFile();
+						location = df.get(row).getLocation();
+						File filetoOpento = new File(location+file);
+						if (filetoOpento.exists()) {
+								openFolderS(location,file);
+								//desktop.open(filetoOpen);
+						}
+					} else if(tabAcive==1) {
+						row = table_2.getSelectedRow();
+						file = tr.get(row).getFolderName();
+						location = tr.get(row).getLocation();
+						File filetoOpen = new File(location+file);
+						if(filetoOpen.exists()) {
+							openFolderS(location,file);
+						}
+					}
+				}
+			});
+	    
+		    //cancels the scheduled download
+			scheduleCancel.addActionListener(new ActionListener() {
+		    	
+		    	@Override
+		    	public void actionPerformed(ActionEvent arg0) {
+		    		if(tabAcive==0) {
+		    			row = table_1.getSelectedRow();
+		    			Dmap.get(df.get(row)).getScheduler().cancel(true);
+		    			Dmap.remove(df.get(row));
+		    			scheduled = scheduled - 1;
+		    			table_1.getModel().setValueAt("Deleted", row, 2);
+		    			table_1.getModel().setValueAt("Deleted", row, 3);
+		    		} else if (tabAcive==1) {
+		    			row = table_2.getSelectedRow();
+		    			Tmap.get(tr.get(row)).getScheduler().cancel(true);
+		    			Tmap.remove(tr.get(row));
+		    			scheduled = scheduled - 1;
+		    			table_2.getModel().setValueAt("Deleted", row, 2);
+		    			table_2.getModel().setValueAt("Deleted", row, 3);
+		    		}
+		    	}
+			});
+	    
+		    /*
+		     * methods to convert the file to the format that is clicked
+		     */
+			mp4.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(0,"mp4",location);
+				}
+			});
+			webm.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(0,"webm",location);
+				}
+			});
+			avi.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(0,"avi",location);
+				}
+			});
+			flv.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(0,"flv",location);
+				}
+			});
+			mp3.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(2,"mp3",location);
+				}
+			});
+			ogg.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(2,"ogg",location);
+				}
+			});
+			acc.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(2,"acc",location);
+				}
+			});
+			wav.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(2,"wav",location);
+				}
+			});
+			png.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(1,"png",location);
+				}
+			});
+			bmp.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(1,"bmp",location);
+				}
+			});
+			gif.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (filetype.equals("video")) {
+						getFileandConv(0,"gif",location);
+					} else {
+						getFileandConv(1,"gif",location);
+					}
+				}
+			});
+			jpg.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					getFileandConv(1,"jpg",location);
+				}
+			});
+			//method to copy URL to clipboard	
+			copyToCl.addActionListener(new ActionListener() {
+	
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (tabAcive==0) {
+						row = table_1.getSelectedRow();
+						StringSelection stringSelection = new StringSelection(df.get(row).getFileLoc());
+						Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+						clipboard.setContents(stringSelection, null);
+					} else if (tabAcive==1) {
+						row = table_2.getSelectedRow();
+						StringSelection stringSelection = new StringSelection(tr.get(row).getMagnetURI());
+						Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+						clipboard.setContents(stringSelection, null);
+					}
+					
+					
+				}
+			});
+			/*
+			 * Pause button,sets the pause flag variable to true,stopping the download,
+			 * whose flag variable "complete" is not changed
+			 */
+			pause.addActionListener(new ActionListener() {
+				
+		    	public void actionPerformed(ActionEvent e) {
+						if (tabAcive==0) {
+							
+							row = table_1.getSelectedRow();
+		    				//pool.shutdownNow();
+		    				df.get(row).PauseDownload();
+		    				if(rateState==true) {
+								downloadSpeedLimit(speedLimitNumber);
+							}
+						} else {
+							row = table_2.getSelectedRow();
+							tr.get(row).setTorPaused();
+						}
 			
-		});
-	    }
-	    private void showPopup(MouseEvent e) {
-	    	if (e.isPopupTrigger()) {
-	    		popup.show(e.getComponent(),e.getX(), e.getY());
-	    	}
-	    }
+				  }
+			});
+			/*
+			 * Resume button,creates new download object with the same args as the one from the selected row
+			 * and starts the download,SubDownload class has file checks to achieve the resume fuctionality,
+			 * torrent is handled by the library
+			 */
+			resume.addActionListener(new ActionListener() {
+	
+				public void actionPerformed(ActionEvent e) {
+					if (tabAcive==0) {
+						type = "URL";
+						row = table_1.getSelectedRow();
+						String fileN = df.get(row).getNameOfFile();
+						int tRow = df.get(row).getTrayRow();
+						if (tRow==-1) {
+							tRow = trayFrameRow;
+							String[] item = {fileN,"0%"};
+							trayframe.modelTray.addRow(item);
+							trayFrameRow = trayFrameRow +1;
+						}
+						df.get(row).setTrayRow(tRow);
+						try {
+							if(df.get(row).getPause()==true || df.get(row).getComplete()==1) {
+								Monitor dMonitor = new Monitor(window,row,type,tRow);
+								df.get(row).setComplete(0);
+								pool.execute(df.get(row));
+								pool.execute(dMonitor);
+								active=active+1;
+								if(rateState==true) {
+									downloadSpeedLimit(speedLimitNumber);
+								}
+							}
+						}catch(Exception e1) {
+							e1.printStackTrace();
+						}
+					} else if (tabAcive==1) {
+						type = "Torrent";
+						row = table_2.getSelectedRow();
+						String NameTo = tr.get(row).getFolderName();
+						int tRow = tr.get(row).getTrayRow();
+						if (tRow==-1) {
+							tRow = trayFrameRow;
+							String[] item = {NameTo,"0%"};
+							trayframe.modelTray.addRow(item);
+							trayFrameRow = trayFrameRow +1;
+						}
+						tr.get(row).setTrayRow(tRow);
+						if(tr.get(row).getPaused()==true || tr.get(row).getComplete()==true) {
+							Monitor dMonitor = new Monitor(window,row,type,tRow);
+							pool.execute(tr.get(row));
+							pool.execute(dMonitor);
+						}
+					}
+				}
+			});
+		}
+		private void showPopup(MouseEvent e) {
+			if (e.isPopupTrigger()) {
+				popup.show(e.getComponent(),e.getX(), e.getY());
+			}
+		}
 	}
 	private String getDateTime() {
 		DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
@@ -1109,12 +1116,12 @@ public class DownloadManager {
 		DateFormat dateFormat = new SimpleDateFormat("hh:mm dd-MM-yy");
 		long ftrtime  = System.currentTimeMillis() + (x*1000);
 		Date date = new Date(ftrtime);
-		System.out.println(dateFormat.format(date));
 		return dateFormat.format(date);
 	}
 	
 	 /*
-	  *  Monitor class monitors the activity of the download and does actions depending on that activity
+	  *  Monitor class monitors the activity of the download and does actions depending on that activity,
+	  *  updateStatus()
 	  *  
 	  *  @author MAHESH KAREKAR
 	  *  @author KONSTANTINOS KARTOFIS
@@ -1138,11 +1145,11 @@ public class DownloadManager {
 			boolean downloadcomplete = true;
 			boolean failed = false;
 			boolean failCheck = true;
-			System.out.println("Monitor");
 			currThread= threadIndex;
 			String failMsg = "Download Failed.Try Downloading Again or verify URL is Correct";
 			if (typeof=="URL") {
 					while (df.get(currThread).getComplete() == 0) {
+					
 					dconnections = df.get(currThread).getTotConnections();
 					if (df.get(currThread).getComplete() == 0 && df.get(currThread).getActiveSubConn() == dconnections ){
 						if(failCheck==true) {
@@ -1178,7 +1185,6 @@ public class DownloadManager {
 						downloadSpeedLimit(speedLimitNumber);
 					}
 			} else if (typeof=="Torrent") {
-				System.out.println("monitoring");
 				while(tr.get(currThread).getComplete() == false && tr.get(currThread).getStopped()==false){
 					gui.updateStatus(currThread,false,typeof,trayFrameRow);
 					try {
@@ -1194,27 +1200,27 @@ public class DownloadManager {
 		   
 	}
 	
-	//updateStatus method updates our table data
+	//method updates our table data
 	public void updateStatus( int currThread, boolean dFailed,String type,int trayR) {
 		if (type=="URL") {
 			if (!dFailed) {
 				model.setValueAt(df.get(currThread).DownloadProgress()+"% "+df.get(currThread).getDownloadSpeed(),currThread,2);	
-		   		model.setValueAt(df.get(currThread).getBytesDownloaded(),currThread,3);
-		   		trayframe.modelTray.setValueAt(df.get(currThread).DownloadProgress()+"%",trayR,1);
+				model.setValueAt(df.get(currThread).getBytesDownloaded(),currThread,3);
+				trayframe.modelTray.setValueAt(df.get(currThread).DownloadProgress()+"%",trayR,1);
 			} else {
 				model.setValueAt("Failed",currThread,2);
-		   		model.setValueAt("Failed",currThread,3);
-		   		trayframe.modelTray.setValueAt("Failed",trayR,1);
+				model.setValueAt("Failed",currThread,3);
+				trayframe.modelTray.setValueAt("Failed",trayR,1);
 			}
 		} else if(type=="Torrent") {
 			if (!dFailed){
 				model2.setValueAt(tr.get(currThread).getPerc()+"% "+tr.get(currThread).getDownloadSpeed(),currThread,2);	
-		   		model2.setValueAt(tr.get(currThread).getDownloaded(),currThread,3);
-		   		trayframe.modelTray.setValueAt(tr.get(currThread).getPerc()+"%",trayR,1);
+				model2.setValueAt(tr.get(currThread).getDownloaded(),currThread,3);
+				trayframe.modelTray.setValueAt(tr.get(currThread).getPerc()+"%",trayR,1);
 			} else {
 				model2.setValueAt("Failed",currThread,2);
-		   		model2.setValueAt("Failed",currThread,3);
-		   		trayframe.modelTray.setValueAt("Failed",trayR,1);
+				model2.setValueAt("Failed",currThread,3);
+				trayframe.modelTray.setValueAt("Failed",trayR,1);
 			}
 		}
 	}
@@ -1254,7 +1260,6 @@ public class DownloadManager {
 						pool.execute(tr.get(ID));
 						pool.execute(d);
 					}
-					System.out.println("Out of time!");
 				}}, x, TimeUnit.SECONDS);
 		}
 		public ScheduledFuture<?> getScheduler() {
@@ -1290,9 +1295,8 @@ public class DownloadManager {
 		df.add(d);
 	}
 	
-	public void addTor(Torrent t,int indx) {
+	public void addTor(Torrent t) {
 		tr.add(t);
-		tr.get(indx).setTorPaused();
 	}
 	
 	/*
