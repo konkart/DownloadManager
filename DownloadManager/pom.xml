@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>DownloadManager</groupId>
   <artifactId>DownloadManager</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0</version>
 
 	<dependencies>
 			<dependency>
@@ -82,6 +82,29 @@
 			    </configuration>
 			</plugin>
 			<plugin>
+				<groupId>com.akathist.maven.plugins.launch4j</groupId>
+				<artifactId>launch4j-maven-plugin</artifactId>
+				<executions>
+					<execution>
+					<id>l4j-gui</id>
+					<phase>package</phase>
+					<goals><goal>launch4j</goal></goals>
+					<configuration>
+						<headerType>gui</headerType>
+						<outfile>${project.build.directory}/DownloadManager.exe</outfile>
+						<jar>${project.build.directory}/DownloadManager-1.0.jar</jar>
+						<classPath>
+							<mainClass>gr.konkart.dm.DownloadManager</mainClass>
+						</classPath>
+						<jre>
+							<minVersion>1.8.0</minVersion>
+							<opts>-Dsun.java2d.d3d=false</opts>
+						</jre>
+					</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>
 				<version>1.15</version>
@@ -91,6 +114,10 @@
 						<goals>
 							<goal>download-licenses</goal>
 						</goals>
+						<configuration>
+							<licensesOutputDirectory>${project.build.directory}/licenses/</licensesOutputDirectory>
+							<licensesOutputFile>${project.build.directory}/licenses/licenses.xml</licensesOutputFile>						
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

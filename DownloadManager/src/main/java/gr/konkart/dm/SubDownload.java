@@ -22,12 +22,14 @@ public class SubDownload implements Runnable{
 	private long bytesDownloaded=0;
 	private byte Buffer[];
 	private boolean complete=false;
+	
 	int downloadID;
 	private volatile double r = 0;
 	private volatile boolean paused = false;
+	InputStream inputStream;
 	FileOutputStream outputStream = null;
 	private boolean isPartial=false;
-	private long bytesDownloadedSession = 0;
+	private volatile long bytesDownloadedSession = 0;
 	boolean failed = false;
 	long oldtime;
 	long now;
@@ -71,7 +73,7 @@ public class SubDownload implements Runnable{
 			checkAndResume(f);
 			
 			//gets the bytes stream
-			InputStream inputStream = uc.getInputStream();
+			inputStream = uc.getInputStream();
 			byte[] buffer = Buffer;
 			
 			while ((bytesRead = inputStream.read(buffer))!=-1 && paused==false){
@@ -104,7 +106,7 @@ public class SubDownload implements Runnable{
 	
 	/*
 	 * speedLimitCheck(),getPause(),setIsNotPartial(),
-	 * setPause(),RateLimit(),checkAndResume()
+	 * setPause(),RateLimit(),checkAndResume()..
 	 * 
 	 * @author KONSTANTINOS KARTOFIS
 	 */

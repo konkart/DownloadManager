@@ -13,15 +13,12 @@ import bt.runtime.Config;
 import bt.torrent.selector.PieceSelector;
 import bt.torrent.selector.SequentialSelector;
 
-
-
-
 public class Torrent implements Runnable{
 	String fileLoc;
 	long startTime;
 	private boolean complete; //Completion flag
 	private String location,folderName;
-	private boolean stopped = false;
+	private boolean stopped;
 	private int trayRow,downloadID;
 	public Torrent(int id,String fileLoc,String nameFolder,String location,int trayRow) {
 		this.fileLoc = fileLoc;
@@ -29,6 +26,7 @@ public class Torrent implements Runnable{
 		this.folderName = nameFolder;
 		this.trayRow = trayRow;
 		this.downloadID = id;
+		stopped = true;
 	}
 	volatile boolean paused=false;	// Paused Flag
 	private long downloaded;		// Downloaded Bytes
@@ -38,6 +36,7 @@ public class Torrent implements Runnable{
 	private int perce;				// percentage
 	@Override
 	public void run() {
+		downloaded = 0;
 		System.setProperty("java.net.preferIPv4Stack" , "true");
 		complete=false;
 		stopped=false;
@@ -47,18 +46,11 @@ public class Torrent implements Runnable{
 			//number of threads to use
 			@Override
 			public int getNumOfHashingThreads() {
-				return Runtime.getRuntime().availableProcessors() * 4;
+				return Runtime.getRuntime().availableProcessors() * 2;
 			}
 		};
 		
-		Duration dur = Duration.ofSeconds(60);
-		config.setPeerConnectionTimeout(dur);
-		config.setPeerConnectionRetryCount(1);
-		config.setMaxPieceReceivingTime(Duration.ofSeconds(240)); 
-		config.setTimeoutedAssignmentPeerBanDuration(Duration.ofMinutes(15));
-		config.setMaxPeerConnections(100);
-		config.setNumberOfPeersToRequestFromTracker(30);
-		
+		config.setPeerConnectionTimeout(Duration.ofSeconds(60));
 		DHTModule dhtModule = new DHTModule(new DHTConfig() {
 		    @Override
 		    public boolean shouldUseRouterBootstrap() {
@@ -81,23 +73,24 @@ public class Torrent implements Runnable{
 				.autoLoadModules()
 				.stopWhenDownloaded()
 				.module(dhtModule)
-				.selector(selector)
 				.build();
-		
 		startTime = System.currentTimeMillis();
 		//start client with callback every 1000ms
 		client.startAsync(state -> {
 			total = state.getPiecesTotal();
 			piece = state.getPiecesComplete();
-			perce = (piece*100)/(total);
+			perce = (piece*100) / total;
+			System.out.println(total + " " + piece + " "+ perce);
 			//if no pieces remaining stop client and flag as completed
-			if (state.getPiecesRemaining() == 0) {
+			if (perce == 100) {
 				client.stop();
 				complete = true;
 				stopped = true;
+				System.out.println(stopped);
 		    } else if(paused==true) {
 		    	client.stop();
 		    	stopped = true;
+		    	System.out.println(stopped);
 		    }
 			//get downloaded bytes
 			downloaded=state.getDownloaded();
@@ -137,16 +130,11 @@ public class Torrent implements Runnable{
 	public int getSize() {//gets the torrent's data size
 		return total;
 	}
+	public void setSize(int size) {
+		this.total = size;
+	}
 	public int getPerc() {//get percentage completed
-		int p=1;
-		if (perce!=0) {
-		
-		return perce;
-		} else {
-			perce = p;
-			return perce;
-		}
-		
+		return perce;	
 	}
 	public boolean getComplete() {
 		return complete;
@@ -156,6 +144,9 @@ public class Torrent implements Runnable{
 	}
 	public void setTorPaused() {
 		paused = true;
+	}
+	public void setTorStopped(boolean stopped) {
+		this.stopped = stopped;
 	}
 	public boolean getPaused() {
 		return paused;

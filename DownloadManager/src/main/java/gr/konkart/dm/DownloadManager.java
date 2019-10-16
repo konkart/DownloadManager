@@ -62,11 +62,13 @@ import javax.swing.JMenu;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.LayoutStyle.ComponentPlacement;
 
 public class DownloadManager {
 	JPopupMenu popup; 
-	static ClassLoader classLoader = DownloadManager.class.getClassLoader();
-	static String path = classLoader.getResource("icon.png").getPath();
+	static String path = System.getProperty("user.dir") + "\\image\\icon.png";
 	static Image image = Toolkit.getDefaultToolkit().getImage(path);
 	public static int downloadID = 0 , torrentID = 0;
 	private static int tDownID = 0 , tTorID = 0;
@@ -87,7 +89,7 @@ public class DownloadManager {
 	private static DatabaseHandler db = new DatabaseHandler();
 	JMenuItem pause,remove,resume,delete,scheduleCancel,open,copyToCl,move,
 		openFolder,mp4,webm,avi,flv,mp3,ogg,acc,wav,jpg,gif,bmp,png;
-	JMenu sectionsMenu;
+	JMenu convertMenu;
 	JTabbedPane tabbedPane;
 	static String homeDefault = System.getProperty("user.home")+"\\Downloads\\";
 	JComboBox<Object> speedCmb;
@@ -184,22 +186,15 @@ public class DownloadManager {
 	private void initialize() {
 		
 		frame = new JFrame();
-		frame.setResizable(false);
 		frame.setBounds(100, 100, 520, 438);
 		frame.setDefaultCloseOperation(JFrame.ICONIFIED);
-		frame.getContentPane().setLayout(null);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(10, 64, 496, 336);
-		frame.getContentPane().add(tabbedPane);
 		
 		JPanel panel = new JPanel();
 		tabbedPane.addTab("Direct", null, panel, null);
-		panel.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(0, 23, 490, 285);
-		panel.add(scrollPane);
 		
 		trayframe = new TrayFrame();
 	    trayframe.setVisible(false);
@@ -222,13 +217,9 @@ public class DownloadManager {
 		table_1.setDefaultEditor(Object.class, null);
 		
 		textField = new JTextField();
-		textField.setBounds(47, 11, 329, 20);
-		frame.getContentPane().add(textField);
 		textField.setColumns(10);
 		
 		JButton btnDownload = new JButton("Download");
-		btnDownload.setBounds(386, 10, 119, 23);
-		frame.getContentPane().add(btnDownload);
 		
 		//creates the download and monitor objects from the given url,adds the download to the main window's table and on the trayframe
 		btnDownload.addActionListener(new ActionListener()
@@ -243,9 +234,9 @@ public class DownloadManager {
 				return;
 			}
 			btnDownload.setEnabled(false);
-			String type = URLHandler.getUriType(textField.getText());
+			String type = URLHandler.getUriType(textField.getText().trim());
 			if(type=="URL") {
-				fileLoc = textField.getText();
+				fileLoc = textField.getText().trim();
 				textField.setText("");
 				String fileN = URLHandler.getFilename(fileLoc);
 				if (new File(homeDefault+fileN).exists()==false) {
@@ -258,6 +249,7 @@ public class DownloadManager {
 					df.add(download);
 					Monitor dMonitor = new Monitor(window,downloadID,type,trayFrameRow);
 					db.insertDownloadDir(df, downloadID);
+					
 					pool.execute(df.get(downloadID));
 					pool.execute(dMonitor);
 					downloadID = downloadID + 1;
@@ -275,16 +267,17 @@ public class DownloadManager {
 				}
 				/*--------------*/
 			} else if (type=="Torrent") {
-				fileLoc = textField.getText();
+				fileLoc = textField.getText().trim();
 				textField.setText("");
-				String NameTo = fileLoc.split("&")[1].split("=")[1];
+				String NameTo = fileLoc.split("&dn=")[1].split("&")[0];
 				try {
 					NameTo = URLDecoder.decode(NameTo,StandardCharsets.UTF_8.name()).replaceAll("[^a-zA-Z0-9]+","");
-				} catch (UnsupportedEncodingException e1) {
+				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
+				
 				if (new File(homeDefault+NameTo+"\\").exists()==false) {
-					String[] item={""+tTorID+"",NameTo,"0%  0 KB/s","0",getDateTime(),fileLoc,homeDefault+NameTo+"\\"};
+					String[] item={""+tTorID+"",NameTo,"0%  0 KB/s","Starting",getDateTime(),fileLoc,homeDefault+NameTo+"\\"};
 					String[] itemTray={NameTo,"0%"};
 					
 					model2.addRow(item);
@@ -293,6 +286,7 @@ public class DownloadManager {
 					Torrent to = new Torrent(tTorID,fileLoc,NameTo,homeDefault,trayFrameRow);
 					tr.add(to);
 					db.insertDownloadTor(tr,torrentID);
+					
 					pool.execute(tr.get(torrentID));
 					pool.execute(dMonitor);
 					torrentID = torrentID + 1;
@@ -315,7 +309,6 @@ public class DownloadManager {
 		/*---------------------*/
 		JSpinner amoun = new JSpinner();
 		amoun.setModel(new SpinnerNumberModel(new Double(0), new Double(0), null, new Double(1)));
-		amoun.setBounds(290, 2, 45, 20);
 		amoun.setUI(new BasicSpinnerUI() {
             protected Component createNextButton() {
                 return null;
@@ -325,7 +318,6 @@ public class DownloadManager {
                 return null;
             }
         });
-		panel.add(amoun);
 		
 		JToggleButton speedLimitBut = new JToggleButton("Speed Limit");
 		//Button that sets the state of the ratelimit and calls the downloadSpeedLimit
@@ -347,13 +339,39 @@ public class DownloadManager {
 				}
 			}
 		});
-		speedLimitBut.setBounds(384, 0, 94, 23);
-		panel.add(speedLimitBut);
 		
 		speedCmb = new JComboBox<Object>();
 		speedCmb.setModel(new DefaultComboBoxModel<Object>(new String[] {"KB/s", "MB/s"}));
-		speedCmb.setBounds(334, 2, 48, 20);
-		panel.add(speedCmb);
+		GroupLayout gl_panel = new GroupLayout(panel);
+		gl_panel.setHorizontalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addContainerGap(290, Short.MAX_VALUE)
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGap(44)
+							.addComponent(speedCmb, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(amoun, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE))
+					.addGap(2)
+					.addComponent(speedLimitBut, GroupLayout.PREFERRED_SIZE, 94, GroupLayout.PREFERRED_SIZE)
+					.addGap(13))
+				.addGroup(gl_panel.createSequentialGroup()
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 490, Short.MAX_VALUE)
+					.addGap(1))
+		);
+		gl_panel.setVerticalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGap(2)
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addComponent(speedCmb, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+								.addComponent(amoun, GroupLayout.PREFERRED_SIZE, 20, GroupLayout.PREFERRED_SIZE)))
+						.addComponent(speedLimitBut))
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 285, Short.MAX_VALUE))
+		);
+		panel.setLayout(gl_panel);
 		
 		
 		
@@ -377,36 +395,22 @@ public class DownloadManager {
 		
 		JSpinner spinner = new JSpinner();
 		spinner.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(1), new Long(1)));
-		spinner.setBounds(238, 42, 34, 20);
-		frame.getContentPane().add(spinner);
 		
 		JLabel lblDay = new JLabel("D");
-		lblDay.setBounds(228, 45, 11, 14);
-		frame.getContentPane().add(lblDay);
 		
 		JLabel lblH = new JLabel("H");
-		lblH.setBounds(274, 45, 11, 14);
-		frame.getContentPane().add(lblH);
 		
 		JSpinner spinner_1 = new JSpinner();
 		spinner_1.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(24), new Long(1)));
-		spinner_1.setBounds(285, 42, 39, 20);
-		frame.getContentPane().add(spinner_1);
 		
 		JLabel lblM = new JLabel("M");
-		lblM.setBounds(326, 45, 11, 14);
-		frame.getContentPane().add(lblM);
 		
 		JSpinner spinner_2 = new JSpinner();
 		spinner_2.setModel(new SpinnerNumberModel(new Long(0), new Long(0), new Long(60), new Long(1)));
-		spinner_2.setBounds(337, 42, 39, 20);
-		frame.getContentPane().add(spinner_2);
 		model2 = (DefaultTableModel) table_2.getModel();
 		
 		JButton btnSchedule = new JButton("Schedule");
 		btnSchedule.setToolTipText("Schedule");
-		btnSchedule.setBounds(386, 41, 119, 23);
-		frame.getContentPane().add(btnSchedule);
 		
 		JButton	chooseFolder = new JButton("Set downloads folder");
 		
@@ -423,8 +427,72 @@ public class DownloadManager {
 				}
 			}
 		});
-		chooseFolder.setBounds(10, 11, 34, 20);
-		frame.getContentPane().add(chooseFolder);
+		GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
+		groupLayout.setHorizontalGroup(
+			groupLayout.createParallelGroup(Alignment.TRAILING)
+				.addGroup(groupLayout.createSequentialGroup()
+					.addGap(10)
+					.addComponent(chooseFolder, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
+					.addGap(3)
+					.addComponent(textField, GroupLayout.DEFAULT_SIZE, 329, Short.MAX_VALUE)
+					.addGap(10)
+					.addComponent(btnDownload, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)
+					.addGap(9))
+				.addGroup(groupLayout.createSequentialGroup()
+					.addContainerGap(224, Short.MAX_VALUE)
+					.addComponent(lblDay, GroupLayout.PREFERRED_SIZE, 10, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(spinner, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
+					.addGap(2)
+					.addComponent(lblH, GroupLayout.PREFERRED_SIZE, 11, GroupLayout.PREFERRED_SIZE)
+					.addComponent(spinner_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(2)
+					.addComponent(lblM, GroupLayout.PREFERRED_SIZE, 11, GroupLayout.PREFERRED_SIZE)
+					.addComponent(spinner_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(10)
+					.addComponent(btnSchedule, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)
+					.addGap(9))
+				.addGroup(groupLayout.createSequentialGroup()
+					.addGap(10)
+					.addComponent(tabbedPane, GroupLayout.DEFAULT_SIZE, 496, Short.MAX_VALUE)
+					.addGap(8))
+		);
+		groupLayout.setVerticalGroup(
+			groupLayout.createParallelGroup(Alignment.LEADING)
+				.addGroup(groupLayout.createSequentialGroup()
+					.addGap(10)
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(1)
+							.addComponent(chooseFolder, GroupLayout.PREFERRED_SIZE, 20, GroupLayout.PREFERRED_SIZE))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(1)
+							.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(btnDownload))
+					.addGap(8)
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(1)
+							.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+								.addComponent(spinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+								.addComponent(lblDay)))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(4)
+							.addComponent(lblH))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(1)
+							.addComponent(spinner_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(4)
+							.addComponent(lblM))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(1)
+							.addComponent(spinner_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(btnSchedule))
+					.addComponent(tabbedPane, GroupLayout.DEFAULT_SIZE, 336, Short.MAX_VALUE)
+					.addGap(9))
+		);
+		frame.getContentPane().setLayout(groupLayout);
 
 		//button that calls the scheduled method with the time given by the spinner componments
 		btnSchedule.addActionListener(new ActionListener() {
@@ -441,9 +509,9 @@ public class DownloadManager {
 				long minToS = (Long) spinner_2.getValue() *60;
 				long timer =  dateToS+hoursToS+minToS;
 				int tmpID = 0;
-				String type = URLHandler.getUriType(textField.getText());
+				String type = URLHandler.getUriType(textField.getText().trim());
     			if (type=="URL") {
-    				fileLoc = textField.getText();
+    				fileLoc = textField.getText().trim();
     				String fileN = URLHandler.getFilename(fileLoc);
     				if (new File(homeDefault+fileN).exists()==false) {
 	    				String[] item={""+tDownID+"",fileN,"Scheduled","Scheduled",getScheduledDate(timer),fileLoc,homeDefault};
@@ -470,7 +538,7 @@ public class DownloadManager {
     					type = null;
     				}
     			} else if (type=="Torrent") {
-    				fileLoc = textField.getText();
+    				fileLoc = textField.getText().trim();
     				String NameTo = fileLoc.split("&")[1].split("=")[1];
     				try {
     					NameTo = URLDecoder.decode(NameTo,StandardCharsets.UTF_8.name()).replaceAll("[^a-zA-Z0-9]+","");
@@ -481,7 +549,7 @@ public class DownloadManager {
 	    				String[] item={""+tTorID+"",NameTo,"Scheduled","Scheduled",getScheduledDate(timer),fileLoc,homeDefault+NameTo+"\\"};
 	    				String[] itemTray={NameTo,"Scheduled"};
 	
-	    				model.addRow(item);
+	    				model2.addRow(item);
 	    				trayframe.modelTray.addRow(itemTray);
 	    				dMonitor = new Monitor(window,torrentID,type,trayFrameRow);
 	    				Torrent to = new Torrent(tTorID,fileLoc,NameTo,homeDefault,trayFrameRow);
@@ -540,41 +608,42 @@ public class DownloadManager {
 		copyToCl = new JMenuItem("Copy URL");
 		popup.add(copyToCl);
 	    //Convertion menu
-		sectionsMenu = new JMenu("Convert to..");
-		sectionsMenu.setVisible(false);
+		convertMenu = new JMenu("Convert to..");
+		convertMenu.setVisible(false);
 		//Videoformats
 		mp4 = new JMenuItem("mp4");
-		sectionsMenu.add(mp4);
+		convertMenu.add(mp4);
 		flv = new JMenuItem("flv");
-		sectionsMenu.add(flv);
+		convertMenu.add(flv);
 		avi = new JMenuItem("avi");
-		sectionsMenu.add(avi);
+		convertMenu.add(avi);
 		webm = new JMenuItem("webm");
-		sectionsMenu.add(avi);
+		convertMenu.add(webm);
 		//audioFormats
 		mp3 = new JMenuItem("mp3");
-		sectionsMenu.add(mp3);
+		convertMenu.add(mp3);
 		wav = new JMenuItem("wav");
-		sectionsMenu.add(wav);
+		convertMenu.add(wav);
 		ogg = new JMenuItem("ogg");
-		sectionsMenu.add(ogg);
+		convertMenu.add(ogg);
 		acc = new JMenuItem("acc");
-		sectionsMenu.add(acc);
+		convertMenu.add(acc);
 		//image formats
 		png = new JMenuItem("png");
-		sectionsMenu.add(png);
+		convertMenu.add(png);
 	    jpg = new JMenuItem("jpg");
-	    sectionsMenu.add(jpg);
+	    convertMenu.add(jpg);
 	    gif = new JMenuItem("gif");
-	    sectionsMenu.add(gif);
+	    convertMenu.add(gif);
 	    bmp = new JMenuItem("bmp");
-	    sectionsMenu.add(bmp);
+	    convertMenu.add(bmp);
 
-	    popup.add(sectionsMenu);
+	    popup.add(convertMenu);
 	    
 	    MouseListener popupListener = new PopupListener();
 	    table_1.addMouseListener(popupListener);
 	    table_2.addMouseListener(popupListener);
+	    frame.pack();
 	}	
 	
 	
@@ -604,7 +673,7 @@ public class DownloadManager {
 					table_2.clearSelection();
 				}
 			}
-			sectionsMenu.setVisible(false);
+			convertMenu.setVisible(false);
 			open.setVisible(false);
 			delete.setVisible(false);
 			move.setVisible(false);
@@ -614,30 +683,47 @@ public class DownloadManager {
 			remove.setVisible(false);
 			scheduleCancel.setVisible(false);
 			if (tabActive==1) {
+				int per;
 				row = table_2.getSelectedRow();
-				progress = table_2.getModel().getValueAt(row, 2).toString();
+				per = tr.get(row).getPerc();
+				int size = tr.get(row).getSize();
 				String status = table_2.getModel().getValueAt(row, 3).toString();
-				String percentSplit[] = progress.split("%");
-				percent = percentSplit[0];
-				int per = Integer.parseInt(percent);
-				if (per>=1 && per<100) {
-					openFolder.setVisible(true);
+				if (tr.get(row).getPaused() || tr.get(row).getStopped()) {
+					remove.setVisible(true);
+				}
+				if (per>=0 && per<100) {
+					if (per > 0 || size>1) {
+						openFolder.setVisible(true);
+					} else {
+						openFolder.setVisible(false);
+					}
 					pause.setVisible(true);
-					remove.setVisible(false);
 					if (tr.get(row).getStopped()==true) {
-						delete.setVisible(true);
-						move.setVisible(true);
-						remove.setVisible(true);
+						pause.setVisible(false);
+						
+						if (size>1) {
+							delete.setVisible(true);
+							move.setVisible(true);
+						}
+					} else {
+						resume.setVisible(false);
 					}
 				} else if (per==100){
 					openFolder.setVisible(true);
-					resume.setVisible(false);
 					delete.setVisible(true);
 					pause.setVisible(false);
-				} else if(status.equals("Deleted")) {
+					move.setVisible(true);
+				}
+				if (status.equals("Not Found")) {
+					resume.setText("Redownload");
+					openFolder.setVisible(false);
+				}
+				if(status.equals("Deleted")) {
+					delete.setVisible(false);
 					resume.setText("Redownload");
 					openFolder.setVisible(false);
 					remove.setVisible(true);
+					move.setVisible(false);
 				} else if (status.equals("Scheduled")) {
 					resume.setVisible(false);
 					openFolder.setVisible(false);
@@ -673,11 +759,12 @@ public class DownloadManager {
 				}
 				if (per==100 ){
 					resume.setText("Redownload");
-					sectionsMenu.setVisible(true);
+					
 					open.setVisible(true);
 					move.setVisible(true);
 					remove.setVisible(true);
 					if ( "image".equals(filetype) ) {
+						convertMenu.setVisible(true);
 						png.setVisible(true);
 						jpg.setVisible(true);
 						gif.setVisible(true);
@@ -692,6 +779,7 @@ public class DownloadManager {
 						wav.setVisible(false);
 					}
 					if ( "video".equals(filetype) ) {
+						convertMenu.setVisible(true);
 						mp4.setVisible(true);
 						flv.setVisible(true);
 						avi.setVisible(true);
@@ -706,6 +794,7 @@ public class DownloadManager {
 						bmp.setVisible(false);
 					}
 					if ( "audio".equals(filetype) ) {
+						convertMenu.setVisible(true);
 						acc.setVisible(true);
 						ogg.setVisible(true);
 						mp3.setVisible(true);
@@ -744,13 +833,13 @@ public class DownloadManager {
 		}
 	    
 		public PopupListener() {
-			int tabAcive = tabbedPane.getSelectedIndex();
+			
 			//method do delete the download from the driver
 			delete.addActionListener(new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
-					
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if(tabAcive==0) {
 						row = table_1.getSelectedRow();
 						file = df.get(row).getNameOfFile();
@@ -779,11 +868,10 @@ public class DownloadManager {
 						File foldertoDelete= new File(location+file+"\\");
 						if(foldertoDelete.exists()) {
 							FileUtils futil = new FileUtils();
-							
 							futil.deleteFiles(foldertoDelete);
-							table_2.getModel().setValueAt("Deleted", row, 3);
-							table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
 				        }
+						table_2.getModel().setValueAt("Deleted", row, 3);
+						table_2.getModel().setValueAt("0%  0 KB/s", row, 2);
 					}
 				}
 		    	
@@ -793,6 +881,7 @@ public class DownloadManager {
 	
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if(tabAcive==0) {
 						row = table_1.getSelectedRow();
 						model.removeRow(row);
@@ -813,6 +902,7 @@ public class DownloadManager {
 	
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if(tabAcive==0) {
 						row = table_1.getSelectedRow();
 						file = df.get(row).getNameOfFile();
@@ -859,6 +949,7 @@ public class DownloadManager {
 		    	
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if(tabAcive==0) {
 					row = table_1.getSelectedRow();
 					file = df.get(row).getNameOfFile();
@@ -881,6 +972,7 @@ public class DownloadManager {
 		    	
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if(tabAcive==0) {
 						row = table_1.getSelectedRow();
 						file = df.get(row).getNameOfFile();
@@ -907,6 +999,7 @@ public class DownloadManager {
 		    	
 		    	@Override
 		    	public void actionPerformed(ActionEvent arg0) {
+		    		int tabAcive = tabbedPane.getSelectedIndex();
 		    		if(tabAcive==0) {
 		    			row = table_1.getSelectedRow();
 		    			Dmap.get(df.get(row)).getScheduler().cancel(true);
@@ -1009,6 +1102,7 @@ public class DownloadManager {
 	
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if (tabAcive==0) {
 						row = table_1.getSelectedRow();
 						StringSelection stringSelection = new StringSelection(df.get(row).getFileLoc());
@@ -1031,8 +1125,8 @@ public class DownloadManager {
 			pause.addActionListener(new ActionListener() {
 				
 		    	public void actionPerformed(ActionEvent e) {
+		    		int tabAcive = tabbedPane.getSelectedIndex();
 						if (tabAcive==0) {
-							
 							row = table_1.getSelectedRow();
 		    				//pool.shutdownNow();
 		    				df.get(row).PauseDownload();
@@ -1052,8 +1146,9 @@ public class DownloadManager {
 			 * torrent is handled by the library
 			 */
 			resume.addActionListener(new ActionListener() {
-	
+				
 				public void actionPerformed(ActionEvent e) {
+					int tabAcive = tabbedPane.getSelectedIndex();
 					if (tabAcive==0) {
 						type = "URL";
 						row = table_1.getSelectedRow();
@@ -1082,6 +1177,7 @@ public class DownloadManager {
 						}
 					} else if (tabAcive==1) {
 						type = "Torrent";
+						
 						row = table_2.getSelectedRow();
 						String NameTo = tr.get(row).getFolderName();
 						int tRow = tr.get(row).getTrayRow();
@@ -1092,7 +1188,8 @@ public class DownloadManager {
 							trayFrameRow = trayFrameRow +1;
 						}
 						tr.get(row).setTrayRow(tRow);
-						if(tr.get(row).getPaused()==true || tr.get(row).getComplete()==true) {
+						System.out.println(tr.get(row).getStopped());
+						if(tr.get(row).getStopped()) {
 							Monitor dMonitor = new Monitor(window,row,type,tRow);
 							pool.execute(tr.get(row));
 							pool.execute(dMonitor);
@@ -1148,7 +1245,7 @@ public class DownloadManager {
 			currThread= threadIndex;
 			String failMsg = "Download Failed.Try Downloading Again or verify URL is Correct";
 			if (typeof=="URL") {
-					while (df.get(currThread).getComplete() == 0) {
+				while (df.get(currThread).getComplete() == 0) {
 					
 					dconnections = df.get(currThread).getTotConnections();
 					if (df.get(currThread).getComplete() == 0 && df.get(currThread).getActiveSubConn() == dconnections ){
@@ -1167,6 +1264,7 @@ public class DownloadManager {
 							df.get(currThread).concatSub();
 							model.setValueAt("100%  0 KB/s",currThread,2);
 							trayframe.modelTray.setValueAt("100%",trayFrameRow,1);
+							System.out.println("done");
 							break;
 						} else if(df.get(currThread).getPause()) {						
 							model.setValueAt(df.get(currThread).DownloadProgress()+"%  0 KB/s",currThread,2);
@@ -1185,7 +1283,7 @@ public class DownloadManager {
 						downloadSpeedLimit(speedLimitNumber);
 					}
 			} else if (typeof=="Torrent") {
-				while(tr.get(currThread).getComplete() == false && tr.get(currThread).getStopped()==false){
+				while(tr.get(currThread).getComplete() == false && tr.get(currThread).getPaused()==false){
 					gui.updateStatus(currThread,false,typeof,trayFrameRow);
 					try {
 						Thread.sleep(1000);
@@ -1194,7 +1292,9 @@ public class DownloadManager {
 					}
 				}
 				model2.setValueAt(String.valueOf(tr.get(currThread).getPerc())+"%  0 KB/s",currThread,2);
-				model2.setValueAt("Paused",currThread,3);
+				if (tr.get(currThread).getComplete()==false && tr.get(currThread).getPaused()==true) {
+					model2.setValueAt("Paused",currThread,3);
+				}
 			}
 		}
 		   
@@ -1204,9 +1304,10 @@ public class DownloadManager {
 	public void updateStatus( int currThread, boolean dFailed,String type,int trayR) {
 		if (type=="URL") {
 			if (!dFailed) {
-				model.setValueAt(df.get(currThread).DownloadProgress()+"% "+df.get(currThread).getDownloadSpeed(),currThread,2);	
+				int progress = df.get(currThread).DownloadProgress();
+				model.setValueAt(progress+"% "+df.get(currThread).getDownloadSpeed(),currThread,2);	
 				model.setValueAt(df.get(currThread).getBytesDownloaded(),currThread,3);
-				trayframe.modelTray.setValueAt(df.get(currThread).DownloadProgress()+"%",trayR,1);
+				trayframe.modelTray.setValueAt(progress+"%",trayR,1);
 			} else {
 				model.setValueAt("Failed",currThread,2);
 				model.setValueAt("Failed",currThread,3);
@@ -1214,9 +1315,10 @@ public class DownloadManager {
 			}
 		} else if(type=="Torrent") {
 			if (!dFailed){
-				model2.setValueAt(tr.get(currThread).getPerc()+"% "+tr.get(currThread).getDownloadSpeed(),currThread,2);	
+				int progress = tr.get(currThread).getPerc();
+				model2.setValueAt(progress+"% "+tr.get(currThread).getDownloadSpeed(),currThread,2);	
 				model2.setValueAt(tr.get(currThread).getDownloaded(),currThread,3);
-				trayframe.modelTray.setValueAt(tr.get(currThread).getPerc()+"%",trayR,1);
+				trayframe.modelTray.setValueAt(progress+"%",trayR,1);
 			} else {
 				model2.setValueAt("Failed",currThread,2);
 				model2.setValueAt("Failed",currThread,3);
@@ -1249,6 +1351,7 @@ public class DownloadManager {
 				@Override
 				public void run() {
 					if (t=="URL") {
+						
 						pool.execute(df.get(ID));
 						pool.execute(d);
 						active = active + 1;
@@ -1257,6 +1360,7 @@ public class DownloadManager {
 						}
 	    				/*--------------*/
 					} else if(t=="Torrent"){
+						
 						pool.execute(tr.get(ID));
 						pool.execute(d);
 					}

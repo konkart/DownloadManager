@@ -20,7 +20,7 @@ public class DatabaseHandler {
 	public void createDB() {
 		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
 			if (conn != null) {
-				String sql = "CREATE TABLE IF NOT EXISTS direct (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text,partial int);";
+				String sql = "CREATE TABLE IF NOT EXISTS direct (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text,partial int DEFAULT -1);";
 				stmt.execute(sql);
 				sql = "CREATE TABLE IF NOT EXISTS torrent (id int NOT NULL,name text NOT NULL,URL text NOT NULL,savedLocation text NOT NULL,date text);";
 				stmt.execute(sql);
@@ -105,10 +105,8 @@ public class DatabaseHandler {
 					int id = Integer.parseInt(results.getString(1));
 					String f = results.getString(4)+"\\"+results.getString(2);
 					File file;
-					if (id > newDownID) {
+					if (id > newDownID || id == newDownID) {
 						newDownID = id;
-					} else if (id == newDownID) {
-						newDownID = id+1;
 					}
 					if ( (file = new File(f)).exists()) {
 						long size = file.length();
@@ -129,12 +127,15 @@ public class DatabaseHandler {
 						download.setPartial(true);
 					} else if (partialValue==0) {
 						download.setPartial(false);
+					} else {
+						download.setPartial(null);
 					}
 					window.addDown(download);
 					
 					t.add(item);
 					
 				}
+				newDownID = newDownID + 1;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -195,31 +196,35 @@ public class DatabaseHandler {
 		ArrayList<String[]> t = new ArrayList<String[]>();
 		try (Connection conn = DriverManager.getConnection(database); Statement stmt = conn.createStatement()) {
 			if (conn != null) {
+				boolean exists = false;
 				String sql = "SELECT * FROM torrent";
 				ResultSet results = stmt.executeQuery(sql);
 				while (results.next()) {
 					String[] item;
 					String f = results.getString(4)+"\\"+results.getString(2);
 					int id = Integer.parseInt(results.getString(1));
-					if (id>newTorID) {
+					if (id>newTorID || id == newTorID) {
 						newTorID = id;
-					} else if (id == newTorID) {
-						newTorID = id+1;
 					}
 					if (new File(f).exists()) {
 						String[] item1 = {String.valueOf(id),results.getString(2),"00%  0 KB/s","Stopped",results.getString(5),results.getString(3)};
 						item = item1;
+						exists = true;
 					} else {
-						String[] item1 = {String.valueOf(id),results.getString(2),"0%  0 KB/s","0",results.getString(5),results.getString(3)};
+						String[] item1 = {String.valueOf(id),results.getString(2),"0%  0 KB/s","Not Found",results.getString(5),results.getString(3)};
 						item = item1;
 					}
 					counterTor = counterTor + 1;
 					Torrent tr = new Torrent(id, results.getString(3), results.getString(2), results.getString(4), -1);
-					tr.setTorPaused();
+					if (exists) {
+						tr.setSize(2);
+					}
 					window.addTor(tr);
 					t.add(item);
 					
 				}
+				newTorID = newTorID + 1;
+				System.out.println(newTorID);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

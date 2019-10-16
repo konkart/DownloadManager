@@ -2,6 +2,7 @@ package gr.konkart.dm;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Window.Type;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
@@ -11,11 +12,13 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
 import javax.imageio.ImageIO;
+import javax.swing.GroupLayout;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import javax.swing.GroupLayout.Alignment;
 
 public class FileUtils{
 	String location;
@@ -28,7 +31,7 @@ public class FileUtils{
 		File f = new File(outfile);
 		
 		OutputStream out = new FileOutputStream(location+f);
-		byte[] buf = new byte[1024*4];
+		byte[] buf = new byte[4096];
 		for (String file : files) {
 			InputStream in = new FileInputStream(location+file);
 			int b = 0;
@@ -63,8 +66,7 @@ public class FileUtils{
 				File destFile = new File(dest, file);
 				moveDir(srcFile,destFile);
 			}
-		}
-		else {
+		} else {
 			Files.move(Paths.get(src.getPath()), Paths.get(dest.getPath()), StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
@@ -110,7 +112,7 @@ public class FileUtils{
 	public void videoConv(String input,String extension) {
 		String keepName[] = input.split("\\.");
 		String file = keepName[0];
-		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+file+"."+extension};
+		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -crf 14 -threads 2 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+file+"."+extension};
 		commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir")+"\\ffmpeg.exe\" -y -i "+input+" -crf 14 -speed fast -threads 4 -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\" "+file+"."+extension};
 		String nameOfFile = file+"."+extension;
 		ffmpegConvert(input,nameOfFile);
@@ -119,7 +121,7 @@ public class FileUtils{
 	public void audioConv(String input,String extension) {
 		String keepName[] = input.split("\\.");
 		String file = keepName[0];
-		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -speed fast -threads 4 "+file+"."+extension};
+		command = new String[] {"cmd.exe", "/c", "ffmpeg -y -i "+input+" -threads 4 "+file+"."+extension};
 		commandFallback = new String[] {"cmd.exe", "/c", "\""+System.getProperty("user.dir") + "\\ffmpeg.exe\" -y -i "+input+" -speed fast -threads 4 "+file+"."+extension};
 		String nameOfFile = file+"."+extension;
 		ffmpegConvert(input,nameOfFile);
@@ -138,6 +140,7 @@ public class FileUtils{
 				String c;
 				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 				while (( c = reader.readLine()) != null)	{
+					System.out.println(c);
 					if(c.contains("Duration")) {
 						ff.progress(true, sdf.parse("1970-01-01 " + c.split("Duration: ")[1].split(",")[0] ).getTime());
 					} else if (c.contains("time=")) {
@@ -182,7 +185,7 @@ public class FileUtils{
 		Thread thread = new Thread(task);                                                
 		thread.start(); 
 	}
-
+	
 	public class FfmpegRender extends JFrame{
 		/**
 		 * 
@@ -191,42 +194,58 @@ public class FileUtils{
 		JFrame ffmpegProgressFrame;
 		JProgressBar progressBar;
 		long max;
-		/**
-		 * @wbp.parser.entryPoint
-		 */
 		public FfmpegRender(String from,String to) {
 			ffmpegProgressFrame = new JFrame();
 			ffmpegProgressFrame.setResizable(false);
-			ffmpegProgressFrame.getContentPane().setLayout(null);
-	  			
 	  			
 			progressBar = new JProgressBar();
-			progressBar.setBounds(10, 81, 414, 29);
-			ffmpegProgressFrame.getContentPane().add(progressBar);
 	  			
 			JLabel fromLabel = new JLabel("New label");
 			fromLabel.setHorizontalAlignment(SwingConstants.CENTER);
-			fromLabel.setBounds(10, 11, 414, 14);
-			ffmpegProgressFrame.getContentPane().add(fromLabel);
 			fromLabel.setText(from);
+			fromLabel.setToolTipText(from);
 	  			
 			JLabel toLabel = new JLabel("New label");
 			toLabel.setHorizontalAlignment(SwingConstants.CENTER);
-			toLabel.setBounds(10, 56, 414, 14);
-			ffmpegProgressFrame.getContentPane().add(toLabel);
 			toLabel.setText(to);
+			toLabel.setToolTipText(to);
 	  			
 			JLabel lblTo = new JLabel("To");
 			lblTo.setHorizontalAlignment(SwingConstants.CENTER);
-			lblTo.setBounds(10, 25, 414, 29);
-			ffmpegProgressFrame.getContentPane().add(lblTo);
+			GroupLayout groupLayout = new GroupLayout(ffmpegProgressFrame.getContentPane());
+			groupLayout.setHorizontalGroup(
+				groupLayout.createParallelGroup(Alignment.LEADING)
+					.addGroup(groupLayout.createSequentialGroup()
+						.addGap(10)
+						.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+							.addComponent(fromLabel, GroupLayout.PREFERRED_SIZE, 414, GroupLayout.PREFERRED_SIZE)
+							.addComponent(lblTo, GroupLayout.PREFERRED_SIZE, 414, GroupLayout.PREFERRED_SIZE)
+							.addComponent(toLabel, GroupLayout.PREFERRED_SIZE, 414, GroupLayout.PREFERRED_SIZE)
+							.addComponent(progressBar, 390 , 414 , Short.MAX_VALUE))
+						.addGap(10))
+			);
+			groupLayout.setVerticalGroup(
+				groupLayout.createParallelGroup(Alignment.LEADING)
+					.addGroup(groupLayout.createSequentialGroup()
+						.addGap(11)
+						.addComponent(fromLabel)
+						.addComponent(lblTo, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
+						.addGap(2)
+						.addComponent(toLabel)
+						.addGap(11)
+						.addComponent(progressBar, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
+						.addContainerGap())
+			);
+			ffmpegProgressFrame.getContentPane().setLayout(groupLayout);
 			ffmpegProgressFrame.setVisible(true);
-	  			
-			Dimension dimension = new Dimension(440,150);
+	  		
+			Dimension dimension = new Dimension(450,150);
 			ffmpegProgressFrame.setPreferredSize(dimension);
+			ffmpegProgressFrame.setSize(dimension);
 			ffmpegProgressFrame.pack();
 			ffmpegProgressFrame.setLocationRelativeTo(null);
 			ffmpegProgressFrame.setVisible(true);
+			
 		}
 		public void progress(boolean getDuration,long en) {
 			if (getDuration==true) {
@@ -236,4 +255,6 @@ public class FileUtils{
 			}
 		}
 	}
+
+	
 }
