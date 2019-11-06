@@ -6,7 +6,7 @@ A download manager program that supports direct downloads and torrents.Featuring
 GUI  
 ![](GUI_2.jpg)  
   
-[Library use for torrent downloads.](https://github.com/atomashpolskiy/bt)  
+[Library used for torrent downloads.](https://github.com/atomashpolskiy/bt)  
  
 Maven project Java 8 1.8.0_201.  
 The default download folder is [user.home]\Downloads.   
