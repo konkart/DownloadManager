@@ -10,4 +10,4 @@ GUI
  
 Maven project Java 8 1.8.0_201.  
 The default download folder is [user.home]\Downloads.   
-Optional: Install FFMPEG or place the ffmpeg.exe in the program folder,so the audio and video conversion will work.
+Optional: Install FFMPEG or place the ffmpeg.exe in the program's folder,so the audio and video conversion can work.
